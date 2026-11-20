@@ -1,19 +1,91 @@
 {
   "description": "Caller asks for a pizza that is NOT on the menu. The agent must not invent it: it offers real options and the caller switches to a hawaiana.",
   "max_call_seconds": 240,
-  "hangup_on": ["numero de pedido", "tu pedido quedo", "pedido ha sido registrado", "pedido esta registrado", "gracias por llamar", "que lo disfrutes"],
+  "hangup_on": [
+    "numero de pedido",
+    "tu pedido quedo",
+    "pedido ha sido registrado",
+    "pedido esta registrado",
+    "gracias por llamar",
+    "que lo disfrutes"
+  ],
   "dialogue": [
-    {"match": ["confirmas", "confirmar", "correcto", "esta bien", "te parece", "lo registro", "procedo"], "say": "si-correcto"},
-    {"match": ["algo mas", "otra cosa", "agregar"], "say": "no-eso-es-todo"},
-    {"match": ["telefono", "tu numero", "numero de contacto"], "say": "telefono"},
-    {"match": ["tu nombre", "como te llamas", "a nombre de"], "say": "nombre"},
-    {"match": ["direccion", "donde te lo enviamos"], "say": "direccion"},
-    {"match": ["no tenemos", "no esta en", "no la tenemos", "no contamos", "te puedo ofrecer", "opciones", "hawaiana", "que pizza", "que te gustaria", "que deseas", "que quieres", "en que te puedo", "tomar tu pedido", "bienvenido", "hola"], "say_seq": ["pizza-barbacoa", "pizza-hawaiana"]}
+    {
+      "match": [
+        "confirmas",
+        "confirmar",
+        "correcto",
+        "esta bien",
+        "te parece",
+        "lo registro",
+        "procedo"
+      ],
+      "say": "yes-correct"
+    },
+    {
+      "match": [
+        "algo mas",
+        "otra cosa",
+        "agregar"
+      ],
+      "say": "no-thats-all"
+    },
+    {
+      "match": [
+        "telefono",
+        "tu numero",
+        "numero de contacto"
+      ],
+      "say": "phone-number"
+    },
+    {
+      "match": [
+        "tu nombre",
+        "como te llamas",
+        "a nombre de"
+      ],
+      "say": "name"
+    },
+    {
+      "match": [
+        "direccion",
+        "donde te lo enviamos"
+      ],
+      "say": "address"
+    },
+    {
+      "match": [
+        "no tenemos",
+        "no esta en",
+        "no la tenemos",
+        "no contamos",
+        "te puedo ofrecer",
+        "opciones",
+        "hawaiana",
+        "que pizza",
+        "que te gustaria",
+        "que deseas",
+        "que quieres",
+        "en que te puedo",
+        "tomar tu pedido",
+        "bienvenido",
+        "hola"
+      ],
+      "say_seq": [
+        "pizza-bbq",
+        "pizza-hawaiian"
+      ]
+    }
   ],
   "verify": {
     "orders": 1,
     "total": 9490,
-    "items": {"hawaiana": 1},
-    "tools_called": ["crear_pedido"]
-  }
+    "items": {
+      "hawaiana": 1
+    },
+    "tools_called": [
+      "create_order"
+    ]
+  },
+  "_note": "'match' / 'hangup_on' strings are what the bot SAYS (Chilean Spanish, accent-insensitive)."
 }

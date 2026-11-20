@@ -9,25 +9,25 @@ export interface DataStackProps extends cdk.StackProps {
 }
 
 /**
- * DynamoDB data model for the Pedidos IVR (fixed menu):
- *   - `Menu`     (PK pizzaId)            — pizzas fijas, precios, promos
- *   - `Pedidos`  (PK pedidoId, stream)   — pedidos creados
- *   - `Clientes` (PK clienteId + GSI telefono-index) — lookup por caller ID
- *   - `Tiendas`  (PK tiendaId)           — sucursales / cobertura
+ * DynamoDB data model for the ordering IVR (fixed menu):
+ *   - `Menu`      (PK pizzaId)                       — fixed pizzas, prices, promos
+ *   - `Orders`    (PK orderId, stream)               — placed orders
+ *   - `Customers` (PK customerId + GSI phone-index)  — caller-ID lookup
+ *   - `Stores`    (PK storeId)                       — store locations
  *
  * All L1 `CfnTable`, on-demand, SSE-KMS, PITR + deletion protection ON.
  */
 export class DataStack extends cdk.Stack {
   public readonly menuTableName: string;
   public readonly menuTableArn: string;
-  public readonly pedidosTableName: string;
-  public readonly pedidosTableArn: string;
-  public readonly clientesTableName: string;
-  public readonly clientesTableArn: string;
-  public readonly clientesTableIndexName: string;
-  public readonly clientesTableIndexArn: string;
-  public readonly tiendasTableName: string;
-  public readonly tiendasTableArn: string;
+  public readonly ordersTableName: string;
+  public readonly ordersTableArn: string;
+  public readonly customersTableName: string;
+  public readonly customersTableArn: string;
+  public readonly customersTableIndexName: string;
+  public readonly customersTableIndexArn: string;
+  public readonly storesTableName: string;
+  public readonly storesTableArn: string;
 
   constructor(scope: Construct, id: string, props: DataStackProps) {
     super(scope, id, props);
@@ -43,35 +43,35 @@ export class DataStack extends cdk.Stack {
       partitionKey: 'pizzaId',
     });
 
-    const pedidos = new AppTable(this, 'Pedidos', {
+    const orders = new AppTable(this, 'Orders', {
       ...shared,
-      tableSlug: 'pedidos',
-      partitionKey: 'pedidoId',
+      tableSlug: 'orders',
+      partitionKey: 'orderId',
       enableStream: true,
     });
 
-    const clientes = new AppTable(this, 'Clientes', {
+    const customers = new AppTable(this, 'Customers', {
       ...shared,
-      tableSlug: 'clientes',
-      partitionKey: 'clienteId',
-      gsi: { indexName: 'telefono-index', partitionKey: 'telefono' },
+      tableSlug: 'customers',
+      partitionKey: 'customerId',
+      gsi: { indexName: 'phone-index', partitionKey: 'phone' },
     });
 
-    const tiendas = new AppTable(this, 'Tiendas', {
+    const stores = new AppTable(this, 'Stores', {
       ...shared,
-      tableSlug: 'tiendas',
-      partitionKey: 'tiendaId',
+      tableSlug: 'stores',
+      partitionKey: 'storeId',
     });
 
     this.menuTableName = menu.tableName;
     this.menuTableArn = menu.tableArn;
-    this.pedidosTableName = pedidos.tableName;
-    this.pedidosTableArn = pedidos.tableArn;
-    this.clientesTableName = clientes.tableName;
-    this.clientesTableArn = clientes.tableArn;
-    this.clientesTableIndexName = clientes.indexName!;
-    this.clientesTableIndexArn = clientes.indexArn!;
-    this.tiendasTableName = tiendas.tableName;
-    this.tiendasTableArn = tiendas.tableArn;
+    this.ordersTableName = orders.tableName;
+    this.ordersTableArn = orders.tableArn;
+    this.customersTableName = customers.tableName;
+    this.customersTableArn = customers.tableArn;
+    this.customersTableIndexName = customers.indexName!;
+    this.customersTableIndexArn = customers.indexArn!;
+    this.storesTableName = stores.tableName;
+    this.storesTableArn = stores.tableArn;
   }
 }

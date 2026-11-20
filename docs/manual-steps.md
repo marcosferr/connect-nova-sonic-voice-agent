@@ -15,7 +15,7 @@ what used to need the CLI or the console, and the few steps that still do.
 | `create-integration-association WISDOM_ASSISTANT` | `AWS::Connect::IntegrationAssociation` |
 | Console: Integrations → Add integration → MCP server | `AWS::AppIntegrations::Application` (`MCP_SERVER`) + `APPLICATION` association |
 | Console: AI agent designer → add tools; security profile | `ToolConfigurations` (`MODEL_CONTEXT_PROTOCOL`) + `AWS::Connect::SecurityProfile` + custom resource |
-| Hand-built flow (session → Lex → agent) | `pedidos-flow-v2.json` with `Fn::Sub` placeholders |
+| Hand-built flow (session → Lex → agent) | `order-flow.json` with `Fn::Sub` placeholders |
 | `update-instance-attribute OUTBOUND_CALLS` | `Attributes.OutboundCalls: true` |
 | Claim DID + associate it with the flow | `AWS::Connect::PhoneNumber` + custom resource (`ENABLE_PHONE_NUMBER=true`) |
 

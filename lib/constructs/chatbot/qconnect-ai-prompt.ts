@@ -9,7 +9,7 @@ export interface QConnectAIPromptProps {
   assistantId: string;
   /** Text model, e.g. `us.amazon.nova-pro-v1:0`. */
   modelId: string;
-  /** Path relative to the `iac/` root, e.g. `prompts/orchestration-sonic-es-v1.yaml`. */
+  /** Path relative to the `iac/` root, e.g. `prompts/orchestrator-prompt.yaml`. */
   promptFile: string;
   promptName: string;
   /** Q in Connect AI prompt type. Default `ORCHESTRATION`. */

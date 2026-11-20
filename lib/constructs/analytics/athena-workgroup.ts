@@ -24,7 +24,7 @@ export class AthenaWorkgroup extends Construct {
 
     this.workgroup = new athena.CfnWorkGroup(this, 'Resource', {
       name: `${projectName}-analytics-${envName}`,
-      description: "Post-call analytics for the Forno Pizza Pedidos POC",
+      description: "Post-call analytics for the Forno Pizza ordering demo",
       state: 'ENABLED',
       // Lets `cdk destroy` delete the workgroup even if it has saved queries.
       recursiveDeleteOption: true,

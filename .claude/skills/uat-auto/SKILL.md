@@ -1,6 +1,6 @@
 ---
 name: uat-auto
-description: This skill should be used when the user asks to "run the automated test calls", "run the call-test suite", "smoke-test the bot after deploy", "synthetic calls", "regression-test the voice agent", "run the WebRTC caller", or wants the Forno Pizza voice agent exercised end to end with synthetic callers (scripts/call-test.py + tools/webrtc-caller) and verified against DynamoDB pedidos and MCP tool spans. Places real WebRTC contacts on the live flow; happy-path cases create REAL pedido rows.
+description: This skill should be used when the user asks to "run the automated test calls", "run the call-test suite", "smoke-test the bot after deploy", "synthetic calls", "regression-test the voice agent", "run the WebRTC caller", or wants the Forno Pizza voice agent exercised end to end with synthetic callers (scripts/call-test.py + tools/webrtc-caller) and verified against DynamoDB orders and MCP tool spans. Places real WebRTC contacts on the live flow; happy-path cases create REAL order rows.
 ---
 
 # Run + verify the synthetic test-call suite
@@ -12,7 +12,7 @@ tests the whole stack (flow -> session-data Lambda -> Lex + Nova 2 Sonic ->
 orchestrator AI agent -> AgentCore Gateway -> tool Lambdas -> DynamoDB):
 
 - **Transport**: `scripts/call-test.py` calls `connect:StartWebRTCContact` on the
-  pedidos contact flow, then drives a headless browser client
+  orders contact flow, then drives a headless browser client
   (`tools/webrtc-caller/`, Node + Puppeteer + Amazon Chime SDK) that joins the
   contact's media session.
 - **Caller voice**: pre-synthesized Spanish Polly clips in
@@ -23,13 +23,17 @@ orchestrator AI agent -> AgentCore Gateway -> tool Lambdas -> DynamoDB):
   (`qconnect list-messages`) and, when the bot finishes a turn, plays the clip
   whose matcher fits the bot's last utterance.
 - **Verdict**: assertions live in the runner's `verify` stage, never in the
-  dialogue: the DynamoDB pedido row for that `contactId` (items, total,
+  dialogue: the DynamoDB order row for that `contactId` (items, total,
   `posStatus`), and the tool spans (`qconnect list-spans`, settle-polled for
-  ~2 min, compared on the tool name after `___`, e.g. `crear_pedido`).
+  ~2 min, compared on the tool name after `___`, e.g. `create_order`).
 
-Cases are JSON files in `tests/calls/cases/*.json` (one per scenario: happy
-path, off-menu request, quantity change before confirmation, caller declines,
-asks for a human, silence). Read an existing case before writing a new one.
+Cases are JSON files in `tests/calls/cases/*.json`, one per scenario. The
+repo ships `happy-path.json` and `off-menu-pizza.json`; good additions are a
+quantity change before confirmation, the caller declining, asking for a human,
+and silence. Read an existing case before writing a new one. Audio clips are
+referenced by English keys (e.g. `order-two-napolitana-one-pepperoni`,
+`pizza-hawaiian`, `yes-correct`, `no-thats-all`); the clip itself is the
+Spanish sentence the caller says.
 
 ## Workflow
 
@@ -45,7 +49,7 @@ asks for a human, silence). Read an existing case before writing a new one.
    Artifacts (per-case call log with every bot turn and the clip played,
    transcript, verdict) land in `tests/calls/runs/<YYYYmmdd-HHMMSS>/`.
    Each case's `verify` block can assert `orders` (exact row count for the
-   contact), `total`, `items` (`pizzaId -> cantidad`), `tools_called` and
+   contact), `total`, `items` (`pizzaId -> quantity`), `tools_called` and
    `max_tool_errors`.
 4. **Interpret**: the `verify` failures are the verdict; "the conversation
    flowed" only proves the transport works.
@@ -63,8 +67,8 @@ asks for a human, silence). Read an existing case before writing a new one.
   answers the read-back with an item instead of "sí", and the call loops.
 - **Assert on data, not phrasing.** LLM wording drifts call to call. Assert
   that a row exists with the expected `items` and `total`, that
-  `crear_pedido` was called exactly once (or not at all for decline cases), and
-  that `validar_cliente` received the caller-ID phone in E.164.
+  `create_order` was called exactly once (or not at all for decline cases), and
+  that `validate_customer` received the caller-ID phone in E.164.
 - **Use the menu ids in `docs/seed/menu.json`** for expected items; the server
   computes `total` from menu prices, so expected totals must come from there.
 - **Keep a silence / no-input case** - it exercises the flow's timeout and

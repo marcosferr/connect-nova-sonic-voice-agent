@@ -13,7 +13,7 @@ export interface StatementJson {
 export interface LambdaRoleProps {
   envName: string;
   projectName: string;
-  /** Role name segment, e.g. `validar-cliente` → `pizza-voice-validar-cliente-role-<env>`. */
+  /** Role name segment, e.g. `validate-customer` → `pizza-voice-validate-customer-role-<env>`. */
   roleSlug: string;
   /** Inline policy statements (least privilege). */
   statements: StatementJson[];

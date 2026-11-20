@@ -24,11 +24,11 @@ security profile al AI agent y asociar un número al flow.
 | Riesgo | Protección |
 |---|---|
 | El modelo inventa o entiende mal el teléfono | El caller ID viene de la red (`$.CustomerEndpoint.Address`) a la sesión como `{{$.Custom.customer_phone}}` |
-| Teléfono dictado o mal formado | Normalizado a E.164 o `TELEFONO_INVALIDO` |
-| Pizza fuera del menú | `PIZZA_FUERA_DE_CATALOGO` **+ el catálogo real** para ofrecer una alternativa válida |
-| "dos", 0 o 50 pizzas | Entero 1–10 por línea o `CANTIDAD_INVALIDA` |
+| Teléfono dictado o mal formado | Normalizado a E.164 o `INVALID_PHONE` |
+| Pizza fuera del menú | `PIZZA_NOT_ON_MENU` **+ el catálogo real** para ofrecer una alternativa válida |
+| "dos", 0 o 50 pizzas | Entero 1–10 por línea o `INVALID_QUANTITY` |
 | Total mal calculado | El total lo calcula el servidor con los precios de DynamoDB |
-| El modelo reintenta → pedido duplicado | `pedidoId = uuid5(contactId + líneas)` + put condicional → `duplicate` |
+| El modelo reintenta → pedido duplicado | `orderId = uuid5(contactId + lines)` + put condicional → `duplicate` |
 | Token falsificado contra el gateway | `CUSTOM_JWT` atado al issuer de la instancia → `401` |
 
 ## Desplegar → verificar → limpiar

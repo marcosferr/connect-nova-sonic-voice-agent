@@ -57,7 +57,7 @@ export class LexBot extends Construct {
       botLocales: [
         {
           localeId: locale,
-          description: `Locale ${locale} wired to Q in Connect (Pedidos), Nova Sonic S2S`,
+          description: `Locale ${locale} wired to Q in Connect (orders), Nova Sonic S2S`,
           nluConfidenceThreshold: 0.4,
           unifiedSpeechSettings: {
             speechFoundationModel: { modelArn: speechModelArn, voiceId: props.voiceId },

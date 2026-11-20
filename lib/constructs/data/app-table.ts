@@ -4,7 +4,7 @@ import { Construct } from 'constructs';
 import { dataRemovalPolicy } from '../../../config/env-config';
 
 export interface GsiSpec {
-  /** Index name, e.g. `telefono-index`. */
+  /** Index name, e.g. `phone-index`. */
   indexName: string;
   /** Partition key attribute of the index. */
   partitionKey: string;
@@ -19,9 +19,9 @@ export interface AppTableProps {
   partitionKey: string;
   /** ARN of the CMK for SSE-KMS. */
   kmsKeyArn: string;
-  /** Enable a NEW_IMAGE stream (e.g. for Pedidos downstream analytics). */
+  /** Enable a NEW_IMAGE stream (e.g. for Orders downstream analytics). */
   enableStream?: boolean;
-  /** Optional single GSI (e.g. caller-ID lookup on Clientes). */
+  /** Optional single GSI (e.g. caller-ID lookup on Customers). */
   gsi?: GsiSpec;
 }
 
@@ -30,7 +30,7 @@ export interface AppTableProps {
  * On-demand billing, SSE with the project CMK, point-in-time recovery and
  * deletion protection ON (single env operates as prod).
  *
- * Used for Menu, Pedidos, Clientes and Tiendas — they only differ in slug,
+ * Used for Menu, Orders, Customers and Stores — they only differ in slug,
  * key, optional stream and optional GSI.
  */
 export class AppTable extends Construct {

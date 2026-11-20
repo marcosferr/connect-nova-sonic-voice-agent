@@ -26,9 +26,9 @@ export interface ConversationalAIStackProps extends cdk.StackProps {
   kmsKeyArn: string;
   lexBotRoleArn: string;
   toolLambdas: {
-    validarCliente: lambda.IFunction;
-    consultarMenu: lambda.IFunction;
-    crearPedido: lambda.IFunction;
+    validateCustomer: lambda.IFunction;
+    getMenu: lambda.IFunction;
+    createOrder: lambda.IFunction;
   };
 }
 
@@ -127,7 +127,7 @@ export class ConversationalAIStack extends cdk.Stack {
       ...shared,
       assistantId: assistant.assistant.attrAssistantId,
       modelId: params.bedrockPromptModel,
-      promptFile: 'prompts/orchestration-sonic-es-v1.yaml',
+      promptFile: 'prompts/orchestrator-prompt.yaml',
       promptName: 'Orchestrator-Sonic-v1',
     });
     prompt.prompt.addResourceDependency(integrations.assistantAssociation);
@@ -158,6 +158,8 @@ export class ConversationalAIStack extends cdk.Stack {
       ...shared,
       instanceArn: connect.instance.attrArn,
       assistantId: assistant.assistant.attrAssistantId,
+      warmMode: params.toolWarmMode,
+      provisionedConcurrency: params.toolProvisionedConcurrency,
     });
 
     // ── Contact flow v2: session → session data → Lex (Nova Sonic) → agent ─
@@ -206,39 +208,42 @@ function buildToolDefinitions(
 ): AgentCoreToolDefinition[] {
   return [
     {
-      name: 'validar_cliente',
-      targetName: 'validar-cliente',
+      name: 'validate_customer',
+      targetName: 'validate-customer',
       description:
-        'Resuelve el caller ID (teléfono) contra la tabla Clientes; crea el cliente si no existe.',
-      lambdaFunction: tools.validarCliente,
+        'Finds the customer by phone number (caller ID); creates the customer if missing.',
+      lambdaFunction: tools.validateCustomer,
       inputSchema: {
         type: 'object',
-        required: ['telefono'],
+        required: ['phone'],
         properties: {
-          telefono: { type: 'string', description: 'Teléfono del cliente (caller ID).' },
-          nombre: { type: 'string', description: 'Nombre del cliente (opcional).' },
+          phone: { type: 'string', description: 'Customer phone number (caller ID).' },
+          name: { type: 'string', description: 'Customer name (optional).' },
         },
       },
       outputSchema: {
         type: 'object',
         properties: {
           status: { type: 'string' },
-          clienteId: { type: 'string' },
-          telefono: { type: 'string' },
-          nombre: { type: 'string' },
-          esNuevo: { type: 'boolean' },
+          customerId: { type: 'string' },
+          phone: { type: 'string' },
+          name: { type: 'string' },
+          isNew: { type: 'boolean' },
+          code: { type: 'string', description: 'Error code when status is "error".' },
+          message: { type: 'string' },
+          suggestedAction: { type: 'string', description: 'What the agent should do next on error.' },
         },
       },
     },
     {
-      name: 'consultar_menu',
-      targetName: 'consultar-menu',
-      description: 'Lee la tabla Menu: pizzas fijas disponibles, precios y promociones activas.',
-      lambdaFunction: tools.consultarMenu,
+      name: 'get_menu',
+      targetName: 'get-menu',
+      description: 'Lists the fixed menu: available pizzas, prices and active promos.',
+      lambdaFunction: tools.getMenu,
       inputSchema: {
         type: 'object',
         properties: {
-          soloActivas: { type: 'boolean', description: 'Solo pizzas activas (default true).' },
+          activeOnly: { type: 'boolean', description: 'Only active pizzas (default true).' },
         },
       },
       outputSchema: {
@@ -246,23 +251,24 @@ function buildToolDefinitions(
         properties: {
           status: { type: 'string' },
           total: { type: 'integer' },
+          validPizzaIds: { type: 'array', items: { type: 'string' } },
           pizzas: { type: 'array', items: { type: 'object' } },
         },
       },
     },
     {
-      name: 'crear_pedido',
-      targetName: 'crear-pedido',
+      name: 'create_order',
+      targetName: 'create-order',
       description:
-        'Valida las pizzas del catálogo, guarda el pedido en DynamoDB y lo envía al POS de la tienda.',
-      lambdaFunction: tools.crearPedido,
+        'Places a confirmed order: validates pizzas against the catalog, computes the total server-side, stores it once per call and sends it to the store POS.',
+      lambdaFunction: tools.createOrder,
       inputSchema: {
         type: 'object',
         required: ['items'],
         properties: {
-          clienteId: { type: 'string' },
-          telefono: { type: 'string' },
-          tiendaId: { type: 'string' },
+          customerId: { type: 'string' },
+          phone: { type: 'string' },
+          storeId: { type: 'string' },
           contactId: {
             type: 'string',
             description: 'Amazon Connect contactId (para trazabilidad/UAT).',
@@ -271,10 +277,10 @@ function buildToolDefinitions(
             type: 'array',
             items: {
               type: 'object',
-              required: ['pizzaId', 'cantidad'],
+              required: ['pizzaId', 'quantity'],
               properties: {
                 pizzaId: { type: 'string' },
-                cantidad: { type: 'integer' },
+                quantity: { type: 'integer' },
               },
             },
           },
@@ -284,9 +290,14 @@ function buildToolDefinitions(
         type: 'object',
         properties: {
           status: { type: 'string' },
-          pedidoId: { type: 'string' },
-          total: { type: 'number' },
+          orderId: { type: 'string' },
+          total: { type: 'number', description: 'Server-computed total — read this back to the caller.' },
+          lines: { type: 'array', items: { type: 'object' } },
           posStatus: { type: 'string' },
+          code: { type: 'string', description: 'Error code when status is "error".' },
+          message: { type: 'string' },
+          suggestedAction: { type: 'string', description: 'What the agent should do next on error.' },
+          catalog: { type: 'array', items: { type: 'object' }, description: 'Valid pizzas, returned with PIZZA_NOT_ON_MENU.' },
         },
       },
     },

@@ -12,7 +12,7 @@ Usage:
   from stack_env import load_env
   env = load_env()
   env.instance_id, env.assistant_id, env.contact_flow_id, env.ai_agent_id,
-  env.table("pedidos"), env.session()  # boto3.Session
+  env.table("orders"), env.session()  # boto3.Session
 
 CLI:  python scripts/stack_env.py   → prints the resolved values as JSON
 """
@@ -61,7 +61,7 @@ class StackEnv:
         return self._out("McpGatewayGatewayUrl")
 
     def table(self, name: str) -> str:
-        """DynamoDB table name, e.g. table('pedidos') → pizza-voice-pedidos-dev."""
+        """DynamoDB table name, e.g. table('orders') → pizza-voice-orders-dev."""
         return f"{self.project}-{name}-{self.env_name}"
 
     def as_dict(self) -> dict:
@@ -71,7 +71,7 @@ class StackEnv:
                 d[attr] = getattr(self, attr)
             except KeyError:
                 d[attr] = None
-        d["pedidos_table"] = self.table("pedidos")
+        d["orders_table"] = self.table("orders")
         return d
 
 

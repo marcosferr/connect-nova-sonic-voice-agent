@@ -21,7 +21,7 @@ export class QConnectAssistant extends Construct {
     this.assistant = new wisdom.CfnAssistant(this, 'Resource', {
       name: `${projectName}-assistant-${envName}`,
       type: 'AGENT',
-      description: "Q in Connect Assistant for the Forno Pizza Pedidos voice bot",
+      description: "Q in Connect Assistant for the Forno Pizza pizza-ordering voice bot",
       tags: [
         { key: 'AmazonConnectEnabled', value: 'True' },
         { key: 'Environment', value: envName },

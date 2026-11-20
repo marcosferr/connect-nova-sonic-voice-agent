@@ -40,14 +40,19 @@ export interface ParamsConfig {
   /** Lex + orchestrator locale. Nova Sonic S2S only supports `es_US`. */
   locale: string;
 
-  /** Base URL of the Forno Pizza POS REST API (the crearPedido Lambda posts here). */
+  /** Cold-start strategy for the tool + session-data Lambdas: none | snapstart | provisioned. */
+  toolWarmMode: 'none' | 'snapstart' | 'provisioned';
+  /** Warm instances per Lambda when toolWarmMode=provisioned. */
+  toolProvisionedConcurrency: number;
+
+  /** Base URL of the Forno Pizza POS REST API (the createOrder Lambda posts here). */
   posApiBaseUrl: string;
 
   // ── Feature flags ──────────────────────────────────────────────────────────
   enableConversationalAI: boolean;
   enableObservability: boolean;
   enableQuickSight: boolean;
-  /** Fixed menu lives in DynamoDB (read by consultarMenu), so no Wisdom KB by default. */
+  /** Fixed menu lives in DynamoDB (read by getMenu), so no Wisdom KB by default. */
   enableKnowledgeBase: boolean;
 
   // ── AgentCore Gateway (MCP) — tools are exposed over MCP, JWT IdP = Connect ──
@@ -85,6 +90,14 @@ function bool(value: string | undefined, fallback: boolean): boolean {
   return value.toLowerCase() === 'true';
 }
 
+function warmMode(v: string | undefined): ParamsConfig['toolWarmMode'] {
+  const mode = (v ?? 'none').toLowerCase();
+  if (mode !== 'none' && mode !== 'snapstart' && mode !== 'provisioned') {
+    throw new Error(`TOOL_WARM_MODE must be none | snapstart | provisioned (got "${v}")`);
+  }
+  return mode;
+}
+
 function buildParams(envName: EnvName): ParamsConfig {
   return {
     envName,
@@ -97,13 +110,15 @@ function buildParams(envName: EnvName): ParamsConfig {
     novaSonicVoiceModel: process.env.NOVA_SONIC_VOICE_MODEL ?? 'amazon.nova-2-sonic-v1:0',
     novaSonicVoiceId: process.env.NOVA_SONIC_VOICE_ID ?? 'Lupe',
 
-    connectInstanceAlias: process.env.CONNECT_INSTANCE_ALIAS ?? 'pedidos',
+    connectInstanceAlias: process.env.CONNECT_INSTANCE_ALIAS ?? 'orders',
     enablePhoneNumber: bool(process.env.ENABLE_PHONE_NUMBER, false),
     phoneCountryCode: process.env.PHONE_COUNTRY_CODE ?? 'US',
     phoneType: process.env.PHONE_TYPE ?? 'DID',
-    contactFlowFile: process.env.CONTACT_FLOW_FILE ?? 'pedidos-flow-v2.json',
+    contactFlowFile: process.env.CONTACT_FLOW_FILE ?? 'order-flow.json',
     locale: process.env.LOCALE ?? 'es_US',
 
+    toolWarmMode: warmMode(process.env.TOOL_WARM_MODE),
+    toolProvisionedConcurrency: parseInt(process.env.TOOL_PROVISIONED_CONCURRENCY ?? '1', 10),
     posApiBaseUrl: process.env.POS_API_BASE_URL ?? 'https://pos.example.com/api',
 
     enableConversationalAI: bool(process.env.ENABLE_CONVERSATIONAL_AI, true),
@@ -130,7 +145,7 @@ export function dataRemovalPolicy(): cdk.RemovalPolicy {
     : cdk.RemovalPolicy.DESTROY;
 }
 
-/** Full Connect instance alias, e.g. `pizza-voice-pedidos-dev`. */
+/** Full Connect instance alias, e.g. `pizza-voice-orders-dev`. */
 export function connectInstanceFullAlias(p: ParamsConfig): string {
   return `${p.projectName}-${p.connectInstanceAlias}-${p.envName}`;
 }

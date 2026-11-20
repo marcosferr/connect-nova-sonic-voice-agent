@@ -1,20 +1,85 @@
 {
   "description": "Caller orders 2 napolitanas + 1 pepperoni and confirms. Expect exactly one order with the server-computed total.",
   "max_call_seconds": 240,
-  "hangup_on": ["numero de pedido", "tu pedido quedo", "pedido ha sido registrado", "pedido esta registrado", "gracias por llamar", "que lo disfrutes"],
+  "hangup_on": [
+    "numero de pedido",
+    "tu pedido quedo",
+    "pedido ha sido registrado",
+    "pedido esta registrado",
+    "gracias por llamar",
+    "que lo disfrutes"
+  ],
   "dialogue": [
-    {"match": ["confirmas", "confirmar", "correcto", "esta bien", "te parece", "lo registro", "procedo"], "say": "si-correcto"},
-    {"match": ["algo mas", "otra cosa", "agregar"], "say": "no-eso-es-todo"},
-    {"match": ["telefono", "tu numero", "numero de contacto"], "say": "telefono"},
-    {"match": ["tu nombre", "como te llamas", "a nombre de"], "say": "nombre"},
-    {"match": ["direccion", "donde te lo enviamos"], "say": "direccion"},
-    {"match": ["que pizza", "que te gustaria", "que deseas", "que quieres", "en que te puedo", "tomar tu pedido", "que vas a pedir", "bienvenido", "hola"], "say": "pedido-napolitanas"}
+    {
+      "match": [
+        "confirmas",
+        "confirmar",
+        "correcto",
+        "esta bien",
+        "te parece",
+        "lo registro",
+        "procedo"
+      ],
+      "say": "yes-correct"
+    },
+    {
+      "match": [
+        "algo mas",
+        "otra cosa",
+        "agregar"
+      ],
+      "say": "no-thats-all"
+    },
+    {
+      "match": [
+        "telefono",
+        "tu numero",
+        "numero de contacto"
+      ],
+      "say": "phone-number"
+    },
+    {
+      "match": [
+        "tu nombre",
+        "como te llamas",
+        "a nombre de"
+      ],
+      "say": "name"
+    },
+    {
+      "match": [
+        "direccion",
+        "donde te lo enviamos"
+      ],
+      "say": "address"
+    },
+    {
+      "match": [
+        "que pizza",
+        "que te gustaria",
+        "que deseas",
+        "que quieres",
+        "en que te puedo",
+        "tomar tu pedido",
+        "que vas a pedir",
+        "bienvenido",
+        "hola"
+      ],
+      "say": "order-two-napolitana-one-pepperoni"
+    }
   ],
   "verify": {
     "orders": 1,
     "total": 27970,
-    "items": {"napolitana": 2, "pepperoni": 1},
-    "tools_called": ["validar_cliente", "crear_pedido"],
+    "items": {
+      "napolitana": 2,
+      "pepperoni": 1
+    },
+    "tools_called": [
+      "validate_customer",
+      "create_order"
+    ],
     "max_tool_errors": 0
-  }
+  },
+  "_note": "'match' / 'hangup_on' strings are what the bot SAYS (Chilean Spanish, accent-insensitive)."
 }

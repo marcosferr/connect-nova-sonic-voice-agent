@@ -20,7 +20,7 @@ def main():
     env = StackEnv(os.environ.get("PROJECT_NAME", "pizza-voice"), os.environ.get("ENV_NAME", "dev"),
                    os.environ.get("AWS_REGION", "us-east-1"), os.environ.get("AWS_PROFILE") or None)
     ddb = env.session().client("dynamodb")
-    for name in ("menu", "tiendas"):
+    for name in ("menu", "stores"):
         doc = json.loads((SEED / f"{name}.json").read_text(encoding="utf-8"))
         requests = next(iter(doc.values()))  # file key is just a template name
         ddb.batch_write_item(RequestItems={env.table(name): requests})

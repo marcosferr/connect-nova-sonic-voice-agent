@@ -15,9 +15,9 @@ flowchart LR
   sd --> lex[Lex V2 · Nova 2 Sonic S2S<br/>es_US / Lupe]
   lex --> agent[Connect AI agent<br/>ORCHESTRATION · Nova Pro]
   agent -->|MCP| gw[AgentCore Gateway<br/>CUSTOM_JWT, issuer = Connect]
-  gw --> t1[validar_cliente]
-  gw --> t2[consultar_menu]
-  gw --> t3[crear_pedido]
+  gw --> t1[validate_customer]
+  gw --> t2[get_menu]
+  gw --> t3[create_order]
   t1 & t2 & t3 --> ddb[(DynamoDB)]
 ```
 
@@ -45,16 +45,16 @@ attaching the security profile to the AI agent (`AssociateSecurityProfiles`,
 
 A speech-to-speech model hears noise, mishears numbers and is eager to please. Every fact that
 matters is therefore validated **server-side**, and every failure comes back as a structured
-error the model can act on (`code` + `accionSugerida`):
+error the model can act on (`code` + `suggestedAction`):
 
 | Risk | Guard | Where |
 |---|---|---|
 | Model invents or mishears the customer's number | Caller ID comes from the carrier (`$.CustomerEndpoint.Address`) into the session as `{{$.Custom.customer_phone}}`; the model never dictates it | `src/lambdas/session-data`, flow, prompt |
-| Spoken / malformed phone | Normalized to E.164 (`9 1234 5678`, `56912345678`…) or `TELEFONO_INVALIDO` | `validar-cliente` |
-| Pizza not on the menu | `PIZZA_FUERA_DE_CATALOGO` **plus the real catalog** so the agent offers a valid alternative | `crear-pedido` |
-| "dos", 0, 50 pizzas | Integer 1–10 per line, 1–10 lines or `CANTIDAD_INVALIDA` / `PEDIDO_DEMASIADO_GRANDE` | `crear-pedido` |
-| Model computes a wrong total | Total computed from DynamoDB prices; the prompt must read back *that* number | `crear-pedido`, prompt |
-| Model retries the tool → duplicate order | `pedidoId = uuid5(contactId + lines)` + conditional put → `status: duplicate` | `crear-pedido` |
+| Spoken / malformed phone | Normalized to E.164 (`9 1234 5678`, `56912345678`…) or `INVALID_PHONE` | `validate-customer` |
+| Pizza not on the menu | `PIZZA_NOT_ON_MENU` **plus the real catalog** so the agent offers a valid alternative | `create-order` |
+| "dos", 0, 50 pizzas | Integer 1–10 per line, 1–10 lines or `INVALID_QUANTITY` / `ORDER_TOO_LARGE` | `create-order` |
+| Model computes a wrong total | Total computed from DynamoDB prices; the prompt must read back *that* number | `create-order`, prompt |
+| Model retries the tool → duplicate order | `orderId = uuid5(contactId + lines)` + conditional put → `status: duplicate` | `create-order` |
 | Forged token hits the gateway | `CUSTOM_JWT` bound to the Connect instance issuer → `401` | gateway |
 
 Offline tests for these guards: `python -m unittest discover -s tests/unit -v`.
@@ -94,11 +94,11 @@ actually made (Q in Connect `ListSpans`). Example:
 ```
 ▶ happy-path: Caller orders 2 napolitanas + 1 pepperoni and confirms…
   BOT: ¡Hola! Bienvenido a Forno Pizza…
-  CALLER: <pedido-napolitanas>
+  CALLER: <order-two-napolitana-one-pepperoni>
   ...
   ✔ orders == 1  found 1
   ✔ total == 27970  got 27970
-  ✔ tools called ⊇ ['crear_pedido', 'validar_cliente']
+  ✔ tools called ⊇ ['create_order', 'validate_customer']
   PASS
 ```
 

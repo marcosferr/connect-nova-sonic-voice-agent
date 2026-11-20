@@ -37,7 +37,7 @@ This is the "hand someone a deliverable" companion to
 scripts/list-recent-contacts.sh --since YYYY-MM-DD --count 30 | column -t -s $'\t'
 ```
 
-Columns: `contactId initiation method pedidoCount total posStatus pedidoIds`.
+Columns: `contactId initiation method orderCount total posStatus orderIds`.
 Take the N most recent rows; ask for `--count` slightly above N. Add `--all` if
 the user wants the synthetic test calls (`WEBRTC_API`) too.
 
@@ -66,12 +66,12 @@ Use the transcript, the Step 1 columns and, when in doubt,
 
 | Condition | Successful |
 |---|---|
-| `pedidoCount=1`, read-back confirmed, row items/total match the transcript | **YES** |
-| `pedidoCount=1` but items or total differ from what was confirmed | **PARTIAL** - note the diff |
-| `pedidoCount=1` but `posStatus` is `error:*` | **PARTIAL** - saved, not forwarded |
-| `pedidoCount>=2` | **PARTIAL** - idempotency regression, note which row is right |
-| `pedidoCount=0` and the caller wanted to order (hang-up mid-order, tool error, escalation) | **NO** |
-| `pedidoCount=0` and the caller only asked about the menu / declined | **YES** if handled correctly - say so in Notes |
+| `orderCount=1`, read-back confirmed, row items/total match the transcript | **YES** |
+| `orderCount=1` but items or total differ from what was confirmed | **PARTIAL** - note the diff |
+| `orderCount=1` but `posStatus` is `error:*` | **PARTIAL** - saved, not forwarded |
+| `orderCount>=2` | **PARTIAL** - idempotency regression, note which row is right |
+| `orderCount=0` and the caller wanted to order (hang-up mid-order, tool error, escalation) | **NO** |
+| `orderCount=0` and the caller only asked about the menu / declined | **YES** if handled correctly - say so in Notes |
 
 **Order (as confirmed)** comes from the agent's read-back in the transcript or
 the row's `items` + `total`. Use `(none)` when the call never reached a
@@ -80,8 +80,8 @@ read-back. Never invent it.
 Verify a suspicious row:
 
 ```bash
-aws dynamodb get-item --table-name pizza-voice-pedidos-dev \
-  --key '{"pedidoId":{"S":"<pedidoId>"}}' \
+aws dynamodb get-item --table-name pizza-voice-orders-dev \
+  --key '{"orderId":{"S":"<orderId>"}}' \
   --query 'Item.{items:items,total:total.N,pos:posStatus.S,contact:contactId.S}'
 ```
 

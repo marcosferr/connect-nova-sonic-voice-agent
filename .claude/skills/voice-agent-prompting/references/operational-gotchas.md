@@ -14,7 +14,7 @@ Read before deploying a prompt, flow or tool change.
 
 **Cause:** Q in Connect parses MESSAGES-format prompts as YAML. Two common ways to break it:
 
-- `system:` written as a plain or quoted scalar containing a literal `: ` (colon + space), which the parser reads as a new mapping key. Example of a line that breaks a plain scalar: `... (dicho en voz alta): 'Déjame revisar' ...`.
+- `system:` written as a plain or quoted scalar containing a literal `: ` (colon + space), which the parser reads as a new mapping key. Example of a line that breaks a plain scalar: `... start with a filler (spoken aloud): 'Déjame revisar' ...` (the quoted part is the spoken Spanish filler).
 - Extra top-level keys, or a `messages:` list that holds anything other than `"{{$.conversationHistory}}"`.
 
 **Rule:** keep `system: |` as a block scalar (colons are then safe) and validate with a YAML parser before deploying. The CDK construct checks the shape at synth time; Q in Connect checks it again at deploy.
@@ -77,7 +77,7 @@ Each deploy creates a new `AIPromptVersion`; the agent points at a version. Old 
 
 ## Gotcha 9 - Caller data must come from the platform, not the caller
 
-The caller's phone and the `contactId` reach the prompt as session variables (`{{$.Custom.customer_phone}}`, written by the session-data Lambda, and `{{$.contactId}}`). Prompts that ask the caller to dictate data the platform already has add turns, add ASR errors and break idempotency (`crear_pedido` keys on `contactId`).
+The caller's phone and the `contactId` reach the prompt as session variables (`{{$.Custom.customer_phone}}`, written by the session-data Lambda, and `{{$.contactId}}`). Prompts that ask the caller to dictate data the platform already has add turns, add ASR errors and break idempotency (`create_order` keys on `contactId`).
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: voice-agent-prompting
-description: This skill should be used when the user asks to "improve the voice prompt", "audit the prompt against Nova best practices", "make the agent sound more natural", "add a rule to the orchestration prompt", "edit orchestration-sonic-es-v1.yaml", "Nova Sonic prompt", "convert a text agent to voice", "phone agent prompt", or any time the Forno Pizza Q in Connect orchestration prompt (Nova 2 Sonic speech-to-speech, Chilean Spanish, MCP tools validar_cliente / consultar_menu / crear_pedido) is being designed, audited, edited or deployed.
+description: This skill should be used when the user asks to "improve the voice prompt", "audit the prompt against Nova best practices", "make the agent sound more natural", "add a rule to the orchestration prompt", "edit orchestrator-prompt.yaml", "Nova Sonic prompt", "convert a text agent to voice", "phone agent prompt", or any time the Forno Pizza Q in Connect orchestration prompt (Nova 2 Sonic speech-to-speech, Chilean Spanish, MCP tools validate_customer / get_menu / create_order) is being designed, audited, edited or deployed.
 ---
 
 # Voice-Agent-Prompting - Nova Sonic / Q in Connect orchestration prompts
@@ -8,7 +8,7 @@ description: This skill should be used when the user asks to "improve the voice 
 ## Purpose
 
 Rules and shipping protocol for the voice agent's system prompt. The live
-target is [prompts/orchestration-sonic-es-v1.yaml](../../../prompts/orchestration-sonic-es-v1.yaml):
+target is [prompts/orchestrator-prompt.yaml](../../../prompts/orchestrator-prompt.yaml):
 a Q in Connect **ORCHESTRATION** AI prompt (`apiFormat=MESSAGES`, model from
 `BEDROCK_PROMPT_MODEL`, default Nova Pro) deployed by CDK
 (`lib/constructs/chatbot/qconnect-ai-prompt.ts`) and attached to the
@@ -18,6 +18,9 @@ Spanish and calls three MCP tools through the AgentCore Gateway.
 
 A good voice prompt is not the same artifact as a good text prompt. This skill
 captures **what to change**, **what never to do**, and **how to ship it safely**.
+
+Convention: the prompt and this skill are in English. Quoted Spanish phrases
+are examples of what the bot or caller *says aloud* (Chilean Spanish).
 
 ## Sources
 
@@ -32,9 +35,9 @@ that matches the question:
 
 ## When this skill applies
 
-- Any edit to `prompts/orchestration-sonic-es-v1.yaml` (new rule, regression fix, tone).
+- Any edit to `prompts/orchestrator-prompt.yaml` (new rule, regression fix, tone).
 - Any change to a tool's contract that the prompt describes (arguments, `status`
-  values, `code` / `accionSugerida`) - prompt and Lambda must change together.
+  values, `code` / `suggestedAction`) - prompt and Lambda must change together.
 - Reviewing a proposed prompt change before deploy.
 
 Not for: Lambda business logic (`src/lambdas/*`), menu content
@@ -54,13 +57,13 @@ ready.
 | Rule | What it justifies |
 |---|---|
 | Clarity & precision (one piece at a time) | Splitting "¿qué pizza y cuántas?" into two turns |
-| Critical-data verification | Read-back of pizzas, quantities and total before `crear_pedido` |
+| Critical-data verification | Read-back of pizzas, quantities and total before `create_order` |
 | Conversational markers | "Perfecto", "Ya", "Un momento" openers |
 | Verbal emphasis | "Lo importante es..." instead of bold |
 | Signposting + numbering | "Primero... después... y por último... entonces, en resumen" recap |
 | Avoid visual formatting | No bullets, asterisks, `1)` lists inside `<message>` |
 | External tool integration | A spoken filler in `<message>` before every tool call |
-| Speech persona | "cálido, breve, paciente" - not "detallado, exhaustivo" |
+| Speech persona | "warm, brief, patient" - not "detailed, comprehensive" |
 
 ### Step 2. Edit additively
 
@@ -68,12 +71,15 @@ Each section of a mature voice prompt usually exists because of a real failure.
 **Do not delete rules during a refactor** unless a clean test run proves the
 underlying bug is gone.
 
-- Broaden rather than replace (e.g. "confirma cantidades" -> "confirma pizzas,
-  cantidades y total, y espera un sí explícito").
-- Add new behaviour as a named block (`CUANDO UNA HERRAMIENTA FALLA`, `FUERA DE MENÚ`).
+- Broaden rather than replace (e.g. "Confirm quantities" -> "Confirm pizzas,
+  quantities and total, and wait for an explicit yes").
+- Add new behaviour as a named block (`WHEN A TOOL RETURNS status "error"`, `OFF-MENU REQUESTS`).
+- Write the instructions in English and state the spoken language explicitly
+  ("ALWAYS speak to the caller in Chilean Spanish"); only example utterances
+  of what the bot says are in Spanish.
 - Anchor hard rules with 1-2 short example exchanges; prose-only rules drift.
-- Keep the tool contract in sync with the Lambda: the prompt says "el total que
-  dices es SIEMPRE el `total` que devuelve crear_pedido" because the server
+- Keep the tool contract in sync with the Lambda: the prompt says "The total you
+  tell the caller is ALWAYS the `total` returned by create_order" because the server
   computes it; if the Lambda changes, the prompt changes in the same commit.
 
 ### Step 3. Keep the YAML shape valid
@@ -87,14 +93,14 @@ The construct enforces it at synth time, and Q in Connect enforces it at deploy:
   `Prompt is not in expected YAML format`.
 - Keep the variables the flow provides: `{{$.Custom.customer_phone}}` (set by
   the session-data Lambda) and `{{$.contactId}}` (idempotency key for
-  `crear_pedido`).
+  `create_order`).
 - Keep the `<message>...</message>` output contract. Anything outside it is not
   spoken; a turn with no `<message>` is silence on the phone.
 
 Validate locally before deploying:
 
 ```bash
-python -c "import yaml,sys; d=yaml.safe_load(open('prompts/orchestration-sonic-es-v1.yaml')); assert set(d)=={'system','messages'}; print('ok', len(d['system']), 'chars')"
+python -c "import yaml,sys; d=yaml.safe_load(open('prompts/orchestrator-prompt.yaml')); assert set(d)=={'system','messages'}; print('ok', len(d['system']), 'chars')"
 npm run build && npm test
 ```
 
@@ -118,14 +124,14 @@ calls, then review with [uat-check](../uat-check/SKILL.md) and
 [list-tool-calls](../list-tool-calls/SKILL.md). Listen / look for:
 
 - **Read-back before save**: pizzas, quantities and total read back, explicit
-  "sí" received, *then* `crear_pedido` - never the other way round.
+  "sí" received, *then* `create_order` - never the other way round.
 - **Spoken total = row total**: the agent says the `total` from the tool result.
 - **No silent gaps**: every tool call is preceded by a short spoken filler.
 - **No formatting leaks**: no bullets, asterisks, digits-as-list-markers,
   `<thinking>` content or tag names spoken aloud.
 - **Off-menu handling**: half-and-half, extra toppings, other sizes are politely
   redirected to the closest menu item.
-- **Tool errors**: on `status=error` the agent follows `accionSugerida` and
+- **Tool errors**: on `status=error` the agent follows `suggestedAction` and
   re-asks in one simple sentence; on `duplicate` it confirms, never re-orders.
 - **Caller ID**: the agent does not ask for the phone number when
   `customer_phone` is present.
@@ -158,7 +164,7 @@ immutable `AIPromptVersion`, so the previous text is also recoverable from
 ## Anti-patterns
 
 - **Hard-coding the menu or prices in the prompt.** The menu lives in DynamoDB;
-  the agent must call `consultar_menu`. Inlined lists go stale and the server
+  the agent must call `get_menu`. Inlined lists go stale and the server
   will reject items that are no longer active.
 - **Letting the model compute totals.** The server computes `total`; the prompt
   must say to read it from the tool result.

@@ -9,9 +9,9 @@ export interface AppSecretsProps {
 }
 
 /**
- * L1 `AWS::SecretsManager::Secret` ×2 for the Pedidos IVR:
+ * L1 `AWS::SecretsManager::Secret` ×2 for the ordering IVR:
  *   - `<project>/pos-api-key-<env>` — credential for the Forno Pizza POS REST API
- *     (used by the crearPedido Lambda).
+ *     (used by the createOrder Lambda).
  *   - `<project>/jwt-secret-<env>`  — shared JWT secret for the contact-center
  *     integration.
  *

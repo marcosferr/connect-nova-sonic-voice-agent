@@ -23,7 +23,7 @@ Each tool returns two results:
 ui_result = {"type": "card|text|image|video|pdf", "content": {...}}
 ```
 
-**Why it matters for prompt design:** what the model receives is what it will try to say. Keep it short and decision-focused. On a phone-only channel there is no `ui_result`, so the MCP tool's JSON *is* the `model_result` - keep `consultar_menu` and `crear_pedido` responses compact.
+**Why it matters for prompt design:** what the model receives is what it will try to say. Keep it short and decision-focused. On a phone-only channel there is no `ui_result`, so the MCP tool's JSON *is* the `model_result` - keep `get_menu` and `create_order` responses compact.
 
 ---
 
@@ -55,7 +55,7 @@ When the user starts speaking the model emits an interruption and the client sto
 
 > *"Architecture uses async/await patterns via FastAPI for non-blocking execution, preventing blocking during extended operations."*
 
-Async transport without a spoken filler is still silence to the caller. If a tool can take > 1 s (e.g. `crear_pedido` forwarding to a store POS), the prompt must have the agent announce it first.
+Async transport without a spoken filler is still silence to the caller. If a tool can take > 1 s (e.g. `create_order` forwarding to a store POS), the prompt must have the agent announce it first.
 
 ---
 

@@ -2,7 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as connect from 'aws-cdk-lib/aws-connect';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
-import { ToolLambda } from '../compute/tool-lambda';
+import { ToolLambda, ToolWarmMode } from '../compute/tool-lambda';
 import { LambdaRole } from '../governance/lambda-role';
 
 export interface SessionDataLambdaProps {
@@ -12,6 +12,8 @@ export interface SessionDataLambdaProps {
   instanceArn: string;
   /** Q in Connect assistant ID (UpdateSessionData scope). */
   assistantId: string;
+  warmMode?: ToolWarmMode;
+  provisionedConcurrency?: number;
 }
 
 /**
@@ -23,7 +25,8 @@ export interface SessionDataLambdaProps {
  * heard. Same L1 role + L2-function-for-bundling pattern as the tool Lambdas.
  */
 export class SessionDataLambda extends Construct {
-  public readonly function: lambda.Function;
+  /** What the contact flow invokes (the `live` alias when warmed). */
+  public readonly function: lambda.IFunction;
   public readonly association: connect.CfnIntegrationAssociation;
 
   constructor(scope: Construct, id: string, props: SessionDataLambdaProps) {
@@ -62,9 +65,11 @@ export class SessionDataLambda extends Construct {
       description: 'Contact flow → Q in Connect session data (caller ID, contactId)',
       environment: { LOG_LEVEL: 'INFO' },
       timeout: cdk.Duration.seconds(8),
+      warmMode: props.warmMode,
+      provisionedConcurrency: props.provisionedConcurrency,
     });
     fn.function.node.addDependency(role.role);
-    this.function = fn.function;
+    this.function = fn.target;
 
     new lambda.CfnPermission(this, 'ConnectInvoke', {
       action: 'lambda:InvokeFunction',

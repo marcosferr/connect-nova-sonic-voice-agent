@@ -7,7 +7,7 @@ import { VoiceAgentStage } from '../lib/stages/voice-agent-stage';
  * Synthesises the whole `dev` stage and asserts the key L1 resources exist.
  * Runs offline (no AWS creds) — account/region come from env-config defaults.
  */
-function synth() {
+function synth(overrides: Record<string, unknown> = {}) {
   const config = getConfigFor('dev');
   // Ensure deterministic account/region for synth.
   const params = {
@@ -21,6 +21,10 @@ function synth() {
     agentcoreJwtDiscoveryUrl: '',
     agentcoreJwtIssuer: '',
     agentcoreGatewayExceptionLevel: '',
+    toolWarmMode: 'none' as const,
+    contactFlowFile: 'order-flow.json',
+    connectInstanceAlias: 'orders',
+    ...overrides,
   };
   const app = new cdk.App();
   const stage = new VoiceAgentStage(app, 'Dev', {
@@ -30,8 +34,8 @@ function synth() {
   return { app, stage };
 }
 
-function templateFor(stackSuffix: string): Template {
-  const { app, stage } = synth();
+function templateFor(stackSuffix: string, overrides: Record<string, unknown> = {}): Template {
+  const { stage } = synth(overrides);
   const stack = stage.node
     .findAll()
     .find((c) => c instanceof cdk.Stack && (c as cdk.Stack).stackName.endsWith(stackSuffix)) as cdk.Stack;
@@ -92,7 +96,7 @@ describe('Voice agent — L1 resources', () => {
       AuthorizerConfiguration: {
         CustomJWTAuthorizer: Match.objectEquals({
           DiscoveryUrl:
-            'https://pizza-voice-pedidos-dev.my.connect.aws/.well-known/openid-configuration',
+            'https://pizza-voice-orders-dev.my.connect.aws/.well-known/openid-configuration',
           CustomClaims: [
             {
               InboundTokenClaimName: 'iss',
@@ -100,7 +104,7 @@ describe('Voice agent — L1 resources', () => {
               AuthorizingClaimMatchValue: {
                 ClaimMatchOperator: 'EQUALS',
                 ClaimMatchValue: {
-                  MatchValueString: 'https://pizza-voice-pedidos-dev.my.connect.aws',
+                  MatchValueString: 'https://pizza-voice-orders-dev.my.connect.aws',
                 },
               },
             },
@@ -109,7 +113,7 @@ describe('Voice agent — L1 resources', () => {
       },
     });
     t.hasResourceProperties('AWS::BedrockAgentCore::GatewayTarget', {
-      Name: 'crear-pedido',
+      Name: 'create-order',
       CredentialProviderConfigurations: [{ CredentialProviderType: 'GATEWAY_IAM_ROLE' }],
       TargetConfiguration: {
         Mcp: { Lambda: Match.objectLike({ ToolSchema: { InlinePayload: Match.anyValue() } }) },
@@ -148,5 +152,22 @@ describe('Voice agent — L1 resources', () => {
         }),
       ],
     });
+  });
+
+  test('Warm mode provisioned: tools invoked through a live alias with provisioned concurrency', () => {
+    const warm = { toolWarmMode: 'provisioned', toolProvisionedConcurrency: 1 };
+    const compute = templateFor('-compute', warm);
+    compute.resourceCountIs('AWS::Lambda::Alias', 3);
+    compute.resourceCountIs('AWS::Lambda::Version', 3);
+    compute.hasResourceProperties('AWS::Lambda::Alias', {
+      Name: 'live',
+      ProvisionedConcurrencyConfig: { ProvisionedConcurrentExecutions: 1 },
+    });
+    const conv = templateFor('-conversational-ai', warm);
+    // session-data Lambda alias lives in the conversational stack
+    conv.resourceCountIs('AWS::Lambda::Alias', 1);
+    const targets = Object.values(conv.findResources('AWS::BedrockAgentCore::GatewayTarget'));
+    const arn = JSON.stringify(targets[0].Properties.TargetConfiguration.Mcp.Lambda.LambdaArn);
+    expect(arn).toMatch(/CustomerLive/); // export of the `live` alias, not the bare function
   });
 });

@@ -10,7 +10,7 @@ What changes (and what stays the same) when a text chatbot becomes a Nova 2 Soni
 
 > *"No code changes needed for tool definitions — business logic layer reuses existing tools with prompt/configuration tuning only."*
 
-The three MCP tools (`validar_cliente`, `consultar_menu`, `crear_pedido`) are plain Lambdas behind an AgentCore Gateway; they would work unchanged for a chat channel. Voice-specific behaviour lives in the prompt and the transport.
+The three MCP tools (`validate_customer`, `get_menu`, `create_order`) are plain Lambdas behind an AgentCore Gateway; they would work unchanged for a chat channel. Voice-specific behaviour lives in the prompt and the transport.
 
 ---
 
@@ -39,7 +39,7 @@ A self-hosted Nova Sonic client needs WebSocket/WebRTC transport, audio encoding
 | Verbose explanations | *"Use short, clear responses."* |
 | Information dump | *"Acknowledge when retrieving data."* |
 | Detailed lists | Smaller sequential steps |
-| Single-shot Q&A | Confirmation loops ("¿Sigo?") |
+| Single-shot Q&A | Confirmation loops (bot says "¿Sigo?") |
 | Formal documentation style | Conversational, warm, patient |
 
 Two operational rules the blog stresses:
@@ -53,9 +53,9 @@ Two operational rules the blog stresses:
 
 > *"Amazon Nova 2 Sonic supports asynchronous tool calling, so the conversation continues naturally while tools run in the background."*
 
-- Parallelize independent calls; chain only when an input depends on a previous result (here `crear_pedido` needs `clienteId` from `validar_cliente`, but `consultar_menu` does not).
-- **Return lean, speakable payloads.** The model reads the result to decide what to say; large raw JSON slows it down and invites it to recite fields. `consultar_menu` returning name + price + short description per active pizza is about the right size.
-- **Return decisions, not just data, on errors.** A `code` plus an `accionSugerida` ("ofrece una pizza del catálogo") lets the voice model recover in one turn instead of improvising.
+- Parallelize independent calls; chain only when an input depends on a previous result (here `create_order` needs `customerId` from `validate_customer`, but `get_menu` does not).
+- **Return lean, speakable payloads.** The model reads the result to decide what to say; large raw JSON slows it down and invites it to recite fields. `get_menu` returning name + price + short description per active pizza is about the right size.
+- **Return decisions, not just data, on errors.** A `code` plus a `suggestedAction` ("offer a pizza from the catalog") lets the voice model recover in one turn instead of improvising.
 
 ---
 

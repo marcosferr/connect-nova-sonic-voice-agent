@@ -16,7 +16,7 @@ Case file (tests/calls/cases/<name>.json):
   {
     "description": "...",
     "max_call_seconds": 240,
-    "hangup_on": ["número de pedido", "gracias por llamar"],   # bot phrases
+    "hangup_on": ["número de pedido", "gracias por llamar"],   # phrases the bot SAYS (Spanish)
     "dialogue": [                                              # first match wins
       {"match": ["confirmas", "correcto"], "say": "si-correcto"},
       {"match": ["qué pizza"], "say_seq": ["pizza-barbacoa", "pizza-hawaiana"]}
@@ -24,8 +24,8 @@ Case file (tests/calls/cases/<name>.json):
     "verify": {
       "orders": 1,                       # exact number of rows for this contact
       "total": 27970,                    # optional, server-computed total
-      "items": {"napolitana": 2},        # optional, pizzaId -> cantidad
-      "tools_called": ["validar_cliente", "crear_pedido"],   # optional
+      "items": {"napolitana": 2},        # optional, pizzaId -> quantity
+      "tools_called": ["validate_customer", "create_order"],   # optional
       "max_tool_errors": 0               # optional
     }
   }
@@ -264,7 +264,7 @@ def verify(case, result, env, ddb, qconnect):
     def check(label, ok, detail=""):
         checks.append({"check": label, "ok": bool(ok), "detail": detail})
 
-    rows = ddb.Table(env.table("pedidos")).scan(
+    rows = ddb.Table(env.table("orders")).scan(
         FilterExpression=Attr("contactId").eq(result["contactId"])).get("Items", [])
     if "orders" in exp:
         check(f"orders == {exp['orders']}", len(rows) == exp["orders"], f"found {len(rows)}")
@@ -272,7 +272,7 @@ def verify(case, result, env, ddb, qconnect):
         check(f"total == {exp['total']}", int(rows[0]["total"]) == exp["total"],
               f"got {rows[0]['total']}")
     if rows and "items" in exp:
-        got = {i["pizzaId"]: int(i["cantidad"]) for i in rows[0].get("items", [])}
+        got = {i["pizzaId"]: int(i["quantity"]) for i in rows[0].get("items", [])}
         check(f"items == {exp['items']}", got == exp["items"], f"got {got}")
 
     if result.get("sessionId") and ("tools_called" in exp or "max_tool_errors" in exp):

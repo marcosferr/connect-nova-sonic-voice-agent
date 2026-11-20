@@ -6,7 +6,7 @@ import * as cr from 'aws-cdk-lib/custom-resources';
 import { Construct } from 'constructs';
 
 export interface OrchestratorMcpTool {
-  /** MCP tool name, e.g. `validar_cliente`. */
+  /** MCP tool name, e.g. `validate_customer`. */
   toolName: string;
   /** `<target>___<tool>` — security-profile application permission. */
   permission: string;
@@ -61,7 +61,7 @@ export class OrchestratorAIAgent extends Construct {
       assistantId: props.assistantId,
       name,
       type: 'ORCHESTRATION',
-      description: "Nova Sonic orchestrator for the Forno Pizza Pedidos voice bot",
+      description: "Nova Sonic orchestrator for the Forno Pizza pizza-ordering voice bot",
       configuration: {
         orchestrationAiAgentConfiguration: {
           connectInstanceArn: props.connectInstanceArn,
@@ -89,7 +89,7 @@ export class OrchestratorAIAgent extends Construct {
       this.securityProfile = new connect.CfnSecurityProfile(this, 'ToolsSecurityProfile', {
         instanceArn: props.connectInstanceArn,
         securityProfileName: `${projectName}-orchestrator-tools-${envName}`,
-        description: 'MCP tool access for the Pedidos orchestrator AI agent',
+        description: 'MCP tool access for the ordering orchestrator AI agent',
         permissions: ['Wisdom.View'],
         applications: [
           {

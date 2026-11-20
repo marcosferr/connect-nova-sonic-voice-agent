@@ -44,13 +44,13 @@ Everything is L1 (`Cfn*`), including AgentCore (`aws_bedrockagentcore.CfnGateway
 - Cross-stack values are plain `public readonly` strings passed through the stage props.
 
 ### Conversational core (lib/stacks/conversational-ai-stack.ts has the diagram)
-- Contact flow `infrastructure/contact-flow/pedidos-flow-v2.json` uses `${Placeholders}` resolved
+- Contact flow `infrastructure/contact-flow/order-flow.json` uses `${Placeholders}` resolved
   by `Fn::Sub`: CreateWisdomSession → UpdateContactData → InvokeLambdaFunction `session-data`
   (caller ID + contactId → `{{$.Custom.*}}`) → ConnectParticipantWithLexBot with
   `x-amz-lex:q-in-connect:ai-agent-arn`.
 - Lex locale **`es_US`** with Nova 2 Sonic via `UnifiedSpeechSettings` (voice `Lupe`). S2S is not
   supported on es_419; never set `VoiceSettings` alongside it.
-- ORCHESTRATION AI agent (Nova Pro), prompt `prompts/orchestration-sonic-es-v1.yaml` (MESSAGES
+- ORCHESTRATION AI agent (Nova Pro), prompt `prompts/orchestrator-prompt.yaml` (MESSAGES
   YAML; customer-facing text inside `<message>` tags).
 - Tools over MCP via AgentCore Gateway, one Lambda target per tool. Inbound `CUSTOM_JWT`, issuer =
   the Connect instance URL (derived from the deterministic alias); validate **only `iss`** via
@@ -60,8 +60,8 @@ Everything is L1 (`Cfn*`), including AgentCore (`aws_bedrockagentcore.CfnGateway
   `<target>___<tool>`. The agent must depend on the MCP association.
 
 ### Tools (src/lambdas, Python 3.12, no deps)
-`validar-cliente`, `consultar-menu`, `crear-pedido`: validate everything server-side and return
-`{"status":"error","code","message","accionSugerida"}` on failure. `crear-pedido` computes the
+`validate-customer`, `get-menu`, `create-order`: validate everything server-side and return
+`{"status":"error","code","message","suggestedAction"}` on failure. `create-order` computes the
 total from DynamoDB prices and is idempotent per `contactId` (uuid5 + conditional put →
 `status: duplicate`). Keep that contract when adding tools; add a unit test in `tests/unit/`.
 

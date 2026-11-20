@@ -30,7 +30,7 @@ for b in $buckets; do [[ "$b" == *"-$ENV_NAME"* ]] && empty_bucket "$b"; done
 npx cdk destroy "Dev/*" --force
 
 # Leftovers when RETAIN_DATA=true (no-ops otherwise).
-for t in menu pedidos clientes tiendas; do
+for t in menu orders customers stores; do
   aws dynamodb delete-table --table-name "$PROJECT_NAME-$t-$ENV_NAME" >/dev/null 2>&1 && echo "deleted table $t" || true
 done
 for b in $buckets; do

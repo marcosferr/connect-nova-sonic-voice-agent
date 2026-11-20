@@ -52,7 +52,7 @@ export class ConnectIntegrations extends Construct {
     if (props.mcpGateway) {
       this.mcpApplication = new appintegrations.CfnApplication(this, 'McpServer', {
         name: `${projectName}-mcp-${envName}`,
-        description: "Forno Pizza Pedidos tools (AgentCore Gateway, MCP)",
+        description: "Forno Pizza ordering tools (AgentCore Gateway, MCP)",
         namespace: props.mcpGateway.gatewayIdentifier,
         applicationType: 'MCP_SERVER',
         isService: false,

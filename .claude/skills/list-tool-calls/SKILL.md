@@ -1,6 +1,6 @@
 ---
 name: list-tool-calls
-description: This skill should be used when the user asks to "list the tool calls", "which tools did the agent call", "did the bot call crear_pedido / validar_cliente / consultar_menu", "are the MCP tools firing", "trace the agent's tool use", "check tool calls for a contact/session", "why did the bot escalate", or "why wasn't the order saved" - i.e. to see which MCP tools the Forno Pizza orchestrator AI agent (Q in Connect + AgentCore Gateway) actually invoked on a call, with what arguments, and whether each one succeeded.
+description: This skill should be used when the user asks to "list the tool calls", "which tools did the agent call", "did the bot call create_order / validate_customer / get_menu", "are the MCP tools firing", "trace the agent's tool use", "check tool calls for a contact/session", "why did the bot escalate", or "why wasn't the order saved" - i.e. to see which MCP tools the Forno Pizza orchestrator AI agent (Q in Connect + AgentCore Gateway) actually invoked on a call, with what arguments, and whether each one succeeded.
 ---
 
 # List-Tool-Calls - what the orchestrator actually invoked
@@ -20,8 +20,8 @@ couldn't take my order"):
    often before any Lambda ran.
 3. **Model called it, the tool ran and returned a business error** -
    `status=OK` but the JSON result is `{"status": "error", "code": ...}`,
-   e.g. `crear_pedido` -> `PIZZA_FUERA_DE_CATALOGO` or `CANTIDAD_INVALIDA`.
-   Data / argument problem; the result's `accionSugerida` tells the agent what to
+   e.g. `create_order` -> `PIZZA_NOT_ON_MENU` or `INVALID_QUANTITY`.
+   Data / argument problem; the result's `suggestedAction` tells the agent what to
    do next, so check the transcript to see whether it followed it.
 
 Gateway and Lambda logs alone **cannot** distinguish #1 from #2 (both show zero
@@ -51,24 +51,25 @@ Illustrative output:
 
 ```
 * session 1f0c...  (contact 9a2e...)  -- 3 tool call(s): 2 ok / 0 exec-error / 1 business-error
-    [OK ] 18:02:11  gateway_<id>__validar-cliente___validar_cliente  args={"telefono": "+56912345678"}
+    [OK ] 18:02:11  gateway_<id>__validate-customer___validate_customer  args={"phone": "+56912345678"}
            -> status=found
-    [OK ] 18:02:30  gateway_<id>__consultar-menu___consultar_menu  args={}
-    [BIZ] 18:03:05  gateway_<id>__crear-pedido___crear_pedido  args={"items": [{"pizzaId": "hawaiana", "cantidad": 1}], ...}
-           -> status=error code=PIZZA_FUERA_DE_CATALOGO
+    [OK ] 18:02:30  gateway_<id>__get-menu___get_menu  args={"activeOnly": true}
+           -> status=ok
+    [BIZ] 18:03:05  gateway_<id>__create-order___create_order  args={"items": [{"pizzaId": "hawaiian", "quantity": 1}], ...}
+           -> status=error code=PIZZA_NOT_ON_MENU
 = 1 session(s): 3 tool call(s), 0 exec-failed, 1 business-error, 0 escalated =
 -- corroboration (last 90m) --
   CW metric AWS/Bedrock-AgentCore Invocations Method=tools/call = 3
-  lambda pizza-voice-validar-cliente-dev: 1 invocation(s)
-  lambda pizza-voice-consultar-menu-dev: 1 invocation(s)
-  lambda pizza-voice-crear-pedido-dev: 1 invocation(s)
+  lambda pizza-voice-validate-customer-dev: 1 invocation(s)
+  lambda pizza-voice-get-menu-dev: 1 invocation(s)
+  lambda pizza-voice-create-order-dev: 1 invocation(s)
 ```
 
 Read it as: the prompt and the MCP binding are fine (all three tools reached
 their Lambdas); the model sent a `pizzaId` that is not on the fixed menu. Check
 the transcript: did the agent offer a real alternative from the returned
-`catalogo`, or did it hallucinate an item from memory instead of using
-`consultar_menu`?
+`catalog`, or did it hallucinate an item from memory instead of using
+`get_menu`?
 
 ## How it works (so you can do it by hand)
 
@@ -88,7 +89,7 @@ the transcript: did the agent offer a real alternative from the returned
 3. **Corroborate (`--corroborate`).** Independent counters for the window: the
    `AWS/Bedrock-AgentCore` `Invocations` metric with `Method=tools/call`, and
    `REPORT` lines in `/aws/lambda/<project>-<tool-slug>-<env>` for
-   `validar-cliente`, `consultar-menu`, `crear-pedido`. If you enabled gateway
+   `validate-customer`, `get-menu`, `create-order`. If you enabled gateway
    log delivery, pass `--gateway-log-group <name>` to also count
    `tools/call` vs `tools/list` lines.
 
@@ -105,7 +106,7 @@ the transcript: did the agent offer a real alternative from the returned
 
 - Span tool names look like `gateway_<gatewayId>__<target>___<tool>`; the
   security-profile permission and the gateway's own id are `<target>___<tool>`,
-  e.g. `crear-pedido___crear_pedido`. The script prints the full name; compare
+  e.g. `create-order___create_order`. The script prints the full name; compare
   on the part after `___`.
 - `Target entity not found` -> the tool id configured on the AI agent does not
   match a tool exposed by the registered MCP application. Usual causes: the
@@ -114,11 +115,11 @@ the transcript: did the agent offer a real alternative from the returned
   rejects Connect's token (never add an `AllowedAudience` that Connect does not
   mint). Redeploy the ConversationalAI stack so the agent, security profile and
   MCP application are regenerated together.
-- `crear_pedido` results: `created` (new row), `duplicate` (same `contactId`
+- `create_order` results: `created` (new row), `duplicate` (same `contactId`
   + lines already saved - idempotency working as designed, not an error),
-  `error` with `code` + `accionSugerida`.
+  `error` with `code` + `suggestedAction`.
 - No `execute_tool` spans at all -> the model never called a tool. Look at the
-  prompt's tool rules in `prompts/orchestration-sonic-es-v1.yaml`.
+  prompt's tool rules in `prompts/orchestrator-prompt.yaml`.
 
 ## Gotchas
 
@@ -132,5 +133,5 @@ the transcript: did the agent offer a real alternative from the returned
   `export MSYS_NO_PATHCONV=1` first or `/aws/...` gets rewritten to a Windows
   path. The Python script is unaffected.
 
-Related: [uat-check](../uat-check/SKILL.md) (was the pedido saved?) and
+Related: [uat-check](../uat-check/SKILL.md) (was the order saved?) and
 [uat-auto](../uat-auto/SKILL.md) (synthetic calls that assert on these spans).

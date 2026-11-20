@@ -4,7 +4,7 @@
 
 **Note:** that page covers Nova Sonic v1. Nova 2 Speech-to-Speech has its own guide at `https://docs.aws.amazon.com/nova/latest/nova2-userguide/sonic-system-prompts.html`. The rules transfer almost verbatim; only the tool-call schema differs.
 
-Every rule in [../SKILL.md](../SKILL.md) maps to one of these. The "For this project" notes apply them to the Forno Pizza order-taking agent.
+Every rule in [../SKILL.md](../SKILL.md) maps to one of these. Quoted Spanish phrases in the "For this project" notes are what the bot says aloud. The "For this project" notes apply them to the Forno Pizza order-taking agent.
 
 ---
 
@@ -30,7 +30,7 @@ Ask for one piece of information at a time; confirm before any tool call.
 
 > *"After collecting the booking code, read it back character by character to confirm accuracy before proceeding."*
 
-**For this project:** ask "¿Qué pizza te gustaría?" and, separately, "¿Cuántas?". If the caller ID is missing and the agent must ask for a phone number, read it back digit by digit ("nueve, uno, dos, tres...") before calling `validar_cliente`.
+**For this project:** ask "¿Qué pizza te gustaría?" and, separately, "¿Cuántas?". If the caller ID is missing and the agent must ask for a phone number, read it back digit by digit ("nueve, uno, dos, tres...") before calling `validate_customer`.
 
 ---
 
@@ -106,13 +106,13 @@ Hard rule: never `1)`, `2)` aloud - always "primero", "después", "por último".
 
 > *"Before sharing multiple ideas, give a preview like 'I'm thinking of three reasons why...' and after completing a topic, use phrases like 'That covers what I wanted to share about...' to signal topic transitions."*
 
-**For this project:** "Hoy tenemos tres pizzas en promoción..." before listing; "Te leo el pedido completo" before the read-back.
+**For this project:** "Hoy tenemos tres pizzas en promoción..." before listing; "Te leo todo lo que pediste" before the read-back.
 
 ---
 
 ## Rule 11 - Identity / critical-data verification
 
-Rules 1 + 3 applied to anything irreversible. Before `crear_pedido`, the agent must read back:
+Rules 1 + 3 applied to anything irreversible. Before `create_order`, the agent must read back:
 
 - each pizza by its menu name,
 - each quantity (watch confusable numbers such as "dos" / "doce", "seis" / "dieciséis"),
@@ -132,7 +132,7 @@ Operative consequences:
 
 1. **Every tool call is preceded by a spoken filler** in `<message>` ("Déjame revisar el menú, un momento"). No filler = silence on the phone.
 2. **Echo what was heard** when the tool input comes from the caller ("Reviso la Napolitana..."); the caller can correct a mishear before the result arrives.
-3. **Let the server validate.** Tool inputs carry ASR errors; the tool Lambdas validate against the catalog and return `code` + `accionSugerida` that the prompt tells the agent to follow.
+3. **Let the server validate.** Tool inputs carry ASR errors; the tool Lambdas validate against the catalog and return `code` + `suggestedAction` that the prompt tells the agent to follow.
 
 ---
 

@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# List recent Amazon Connect voice contacts joined with their pedidos DynamoDB rows.
+# List recent Amazon Connect voice contacts joined with their orders DynamoDB rows.
 #
 # For each contact this shows:
-#   pedidoCount  number of <project>-pedidos-<env> rows whose contactId matches
-#                  0  = no order saved (hang-up, caller declined, or crear_pedido never called / failed)
+#   orderCount  number of <project>-orders-<env> rows whose contactId matches
+#                  0  = no order saved (hang-up, caller declined, or create_order never called / failed)
 #                  1  = normal
-#                  2+ = idempotency regression (crear_pedido is supposed to be idempotent per contactId)
+#                  2+ = idempotency regression (create_order is supposed to be idempotent per contactId)
 #   total        sum of `total` across those rows
 #   posStatus    comma-joined posStatus values (ok / skipped / pending / error:<http>)
-#   pedidoIds    comma-joined pedidoId values (use with `aws dynamodb get-item` for detail)
+#   orderIds    comma-joined orderId values (use with `aws dynamodb get-item` for detail)
 #
 # Usage:
 #   scripts/list-recent-contacts.sh                        # last 24h, 20 max, inbound voice only
@@ -26,7 +26,7 @@ AWS_REGION="${AWS_REGION:-us-east-1}"
 PROJECT_NAME="${PROJECT_NAME:-pizza-voice}"
 ENV_NAME="${ENV_NAME:-dev}"
 STACK="$PROJECT_NAME-$ENV_NAME-conversational-ai"
-DDB_TABLE="$PROJECT_NAME-pedidos-$ENV_NAME"
+DDB_TABLE="$PROJECT_NAME-orders-$ENV_NAME"
 
 SINCE=""
 COUNT=20
@@ -81,20 +81,20 @@ if [[ "$FILTER" == "inbound-voice" ]]; then
 fi
 contacts=$(echo "$contacts_raw" | jq "$jq_filter")
 
-# --- 2. pedidos rows in the same window (one scan, joined in memory) ---
-# `creadoEn` is ISO-8601 UTC, so string comparison is order-preserving.
+# --- 2. orders rows in the same window (one scan, joined in memory) ---
+# `createdAt` is ISO-8601 UTC, so string comparison is order-preserving.
 orders_raw=$(aws_call dynamodb scan \
   --table-name "$DDB_TABLE" \
-  --filter-expression "creadoEn >= :since" \
+  --filter-expression "createdAt >= :since" \
   --expression-attribute-values "{\":since\":{\"S\":\"$SINCE\"}}" \
-  --projection-expression "pedidoId, contactId, creadoEn, #t, posStatus" \
+  --projection-expression "orderId, contactId, createdAt, #t, posStatus" \
   --expression-attribute-names '{"#t":"total"}')
 
 orders_by_contact=$(echo "$orders_raw" | jq '
   [ .Items[]
     | select(.contactId != null)
     | { contactId: .contactId.S,
-        pedidoId:  .pedidoId.S,
+        orderId:  .orderId.S,
         total:     ((.total.N // "0") | tonumber),
         pos:       (.posStatus.S // "-") } ]
   | group_by(.contactId)
@@ -103,7 +103,7 @@ orders_by_contact=$(echo "$orders_raw" | jq '
 ')
 
 # --- 3. Join + emit ---
-printf 'contactId\tinitiation\tmethod\tpedidoCount\ttotal\tposStatus\tpedidoIds\n'
+printf 'contactId\tinitiation\tmethod\torderCount\ttotal\tposStatus\torderIds\n'
 echo "$contacts" | jq -r --argjson m "$orders_by_contact" '
   .[] | . as $c
   | ($m[$c.Id] // []) as $o
@@ -114,6 +114,6 @@ echo "$contacts" | jq -r --argjson m "$orders_by_contact" '
       ($o | length),
       (if ($o | length) == 0 then "-" else ($o | map(.total) | add | tostring) end),
       (if ($o | length) == 0 then "-" else ($o | map(.pos) | join(",")) end),
-      ($o | map(.pedidoId) | join(","))
+      ($o | map(.orderId) | join(","))
     ] | @tsv
 '

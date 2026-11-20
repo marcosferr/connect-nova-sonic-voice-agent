@@ -20,7 +20,7 @@ export interface ConnectContactFlowProps {
 }
 
 /**
- * L1 `AWS::Connect::ContactFlow` for the single Pedidos IVR. `content` is the
+ * L1 `AWS::Connect::ContactFlow` for the single ordering IVR. `content` is the
  * Amazon Connect Flow Language JSON loaded from
  * `infrastructure/contact-flow/<file>` (parsed at synth as a sanity check).
  *
@@ -62,10 +62,10 @@ export class ConnectContactFlow extends Construct {
 
     this.flow = new connect.CfnContactFlow(this, 'Resource', {
       instanceArn: props.instanceArn,
-      name: `${projectName}-pedidos-${envName}`,
+      name: `${projectName}-orders-${envName}`,
       type: 'CONTACT_FLOW',
       state: 'ACTIVE',
-      description: `Forno Pizza Pedidos IVR (loaded from infrastructure/contact-flow/${props.contactFlowFile})`,
+      description: `Forno Pizza ordering IVR (loaded from infrastructure/contact-flow/${props.contactFlowFile})`,
       content,
     });
   }

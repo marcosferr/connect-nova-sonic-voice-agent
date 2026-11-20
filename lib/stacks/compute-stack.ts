@@ -6,75 +6,80 @@ import { ToolLambda } from '../constructs/compute/tool-lambda';
 
 export interface ComputeStackProps extends cdk.StackProps {
   params: ParamsConfig;
-  validarClienteRoleArn: string;
-  consultarMenuRoleArn: string;
-  crearPedidoRoleArn: string;
+  validateCustomerRoleArn: string;
+  getMenuRoleArn: string;
+  createOrderRoleArn: string;
   menuTableName: string;
-  pedidosTableName: string;
-  clientesTableName: string;
-  clientesTableIndexName: string;
-  tiendasTableName: string;
+  ordersTableName: string;
+  customersTableName: string;
+  customersTableIndexName: string;
+  storesTableName: string;
   posSecretArn: string;
 }
 
 /**
  * The 3 MCP tool Lambdas exposed to the orchestrator via AgentCore Gateway.
  * Each is a thin Python 3.12 function reading/writing the DynamoDB tables;
- * `crear-pedido` also posts to the Forno Pizza POS using the secret.
+ * `create-order` also posts to the Forno Pizza POS using the secret.
  */
 export class ComputeStack extends cdk.Stack {
-  public readonly validarClienteFunction: lambda.IFunction;
-  public readonly consultarMenuFunction: lambda.IFunction;
-  public readonly crearPedidoFunction: lambda.IFunction;
-  public readonly validarClienteFunctionName: string;
-  public readonly consultarMenuFunctionName: string;
-  public readonly crearPedidoFunctionName: string;
+  public readonly validateCustomerFunction: lambda.IFunction;
+  public readonly getMenuFunction: lambda.IFunction;
+  public readonly createOrderFunction: lambda.IFunction;
+  public readonly validateCustomerFunctionName: string;
+  public readonly getMenuFunctionName: string;
+  public readonly createOrderFunctionName: string;
 
   constructor(scope: Construct, id: string, props: ComputeStackProps) {
     super(scope, id, props);
-    const shared = { envName: props.params.envName, projectName: props.params.projectName };
+    const shared = {
+      envName: props.params.envName,
+      projectName: props.params.projectName,
+      warmMode: props.params.toolWarmMode,
+      provisionedConcurrency: props.params.toolProvisionedConcurrency,
+    };
 
-    const validarCliente = new ToolLambda(this, 'ValidarCliente', {
+    const validateCustomer = new ToolLambda(this, 'ValidateCustomer', {
       ...shared,
-      toolSlug: 'validar-cliente',
-      roleArn: props.validarClienteRoleArn,
-      description: 'Resuelve el caller ID contra la tabla Clientes; crea el cliente si no existe',
+      toolSlug: 'validate-customer',
+      roleArn: props.validateCustomerRoleArn,
+      description: 'Resolves the caller phone against the Customers table; creates the customer if missing',
       environment: {
-        CLIENTES_TABLE: props.clientesTableName,
-        CLIENTES_TELEFONO_INDEX: props.clientesTableIndexName,
+        CUSTOMERS_TABLE: props.customersTableName,
+        CUSTOMERS_PHONE_INDEX: props.customersTableIndexName,
       },
     });
 
-    const consultarMenu = new ToolLambda(this, 'ConsultarMenu', {
+    const getMenu = new ToolLambda(this, 'GetMenu', {
       ...shared,
-      toolSlug: 'consultar-menu',
-      roleArn: props.consultarMenuRoleArn,
-      description: 'Lee la tabla Menu: pizzas fijas disponibles, precios y promos activas',
+      toolSlug: 'get-menu',
+      roleArn: props.getMenuRoleArn,
+      description: 'Reads the Menu table: fixed pizzas, prices and active promos',
       environment: {
         MENU_TABLE: props.menuTableName,
       },
     });
 
-    const crearPedido = new ToolLambda(this, 'CrearPedido', {
+    const createOrder = new ToolLambda(this, 'CreateOrder', {
       ...shared,
-      toolSlug: 'crear-pedido',
-      roleArn: props.crearPedidoRoleArn,
-      description: 'Valida la pizza del catálogo, guarda el pedido y lo envía al POS de la tienda',
+      toolSlug: 'create-order',
+      roleArn: props.createOrderRoleArn,
+      description: 'Validates the order against the catalog, stores it once and sends it to the store POS',
       timeout: cdk.Duration.seconds(60),
       environment: {
-        PEDIDOS_TABLE: props.pedidosTableName,
+        ORDERS_TABLE: props.ordersTableName,
         MENU_TABLE: props.menuTableName,
-        TIENDAS_TABLE: props.tiendasTableName,
+        STORES_TABLE: props.storesTableName,
         POS_API_BASE_URL: props.params.posApiBaseUrl,
         POS_SECRET_ARN: props.posSecretArn,
       },
     });
 
-    this.validarClienteFunction = validarCliente.function;
-    this.consultarMenuFunction = consultarMenu.function;
-    this.crearPedidoFunction = crearPedido.function;
-    this.validarClienteFunctionName = validarCliente.functionName;
-    this.consultarMenuFunctionName = consultarMenu.functionName;
-    this.crearPedidoFunctionName = crearPedido.functionName;
+    this.validateCustomerFunction = validateCustomer.target;
+    this.getMenuFunction = getMenu.target;
+    this.createOrderFunction = createOrder.target;
+    this.validateCustomerFunctionName = validateCustomer.functionName;
+    this.getMenuFunctionName = getMenu.functionName;
+    this.createOrderFunctionName = createOrder.functionName;
   }
 }

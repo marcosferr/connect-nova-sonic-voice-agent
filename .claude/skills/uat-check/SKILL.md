@@ -1,6 +1,6 @@
 ---
 name: uat-check
-description: This skill should be used when the user asks to "check the UAT", "review the test calls", "audit today's calls", "did the order get saved", "any duplicate pedidos", "why was there no pedido for this call", or wants to cross-reference Amazon Connect contacts with Q in Connect transcripts, MCP tool spans and the pizza-voice pedidos DynamoDB table for the Forno Pizza voice agent. Read-only.
+description: This skill should be used when the user asks to "check the UAT", "review the test calls", "audit today's calls", "did the order get saved", "any duplicate orders", "why was there no order for this call", or wants to cross-reference Amazon Connect contacts with Q in Connect transcripts, MCP tool spans and the pizza-voice orders DynamoDB table for the Forno Pizza voice agent. Read-only.
 ---
 
 # UAT-Check - review real or test calls end to end
@@ -10,10 +10,10 @@ description: This skill should be used when the user asks to "check the UAT", "r
 A repeatable, read-only workflow for reviewing calls to the Forno Pizza voice
 agent. A review answers, for a window of calls:
 
-- Did the call produce a row in `<project>-pedidos-<env>` (default
-  `pizza-voice-pedidos-dev`)?
+- Did the call produce a row in `<project>-orders-<env>` (default
+  `pizza-voice-orders-dev`)?
 - Did the agent read the full order back and get an explicit "sí" **before**
-  calling `crear_pedido`?
+  calling `create_order`?
 - Does the saved row (`items`, `total`) match what the caller actually asked
   for in the transcript?
 - Was the order forwarded to the store POS (`posStatus`)?
@@ -27,11 +27,11 @@ differ from the defaults (`us-east-1`, `pizza-voice`, `dev`).
 
 | Tool | What it does |
 |---|---|
-| `scripts/list-recent-contacts.sh` | Joins Connect `search-contacts` with one DynamoDB scan of the pedidos table. Tab-separated: `contactId initiation method pedidoCount total posStatus pedidoIds`. |
+| `scripts/list-recent-contacts.sh` | Joins Connect `search-contacts` with one DynamoDB scan of the orders table. Tab-separated: `contactId initiation method orderCount total posStatus orderIds`. |
 | `scripts/pull-session-transcript.sh <contactId>` | Resolves the Q in Connect session, paginates `qconnect list-messages`, prints a chronological BOT / CUSTOMER transcript. |
 | `python scripts/list-tool-calls.py --contact <contactId>` | ListSpans view: which MCP tools were called, arguments, OK / ERROR / business error. See [list-tool-calls](../list-tool-calls/SKILL.md). |
-| `aws dynamodb get-item --table-name pizza-voice-pedidos-dev --key '{"pedidoId":{"S":"<id>"}}'` | Full pedido row: `contactId`, `telefono`, `clienteId`, `items`, `total`, `posStatus`, `creadoEn`. |
-| `aws logs tail /aws/lambda/pizza-voice-crear-pedido-dev --since 2h --filter-pattern '"<contactId>"'` | The tool Lambda's own view of that call (validation errors, POS response). Same pattern for `-validar-cliente-` and `-consultar-menu-`. |
+| `aws dynamodb get-item --table-name pizza-voice-orders-dev --key '{"orderId":{"S":"<id>"}}'` | Full order row: `contactId`, `phone`, `customerId`, `items`, `total`, `posStatus`, `createdAt`. |
+| `aws logs tail /aws/lambda/pizza-voice-create-order-dev --since 2h --filter-pattern '"<contactId>"'` | The tool Lambda's own view of that call (validation errors, POS response). Same pattern for `-validate-customer-` and `-get-menu-`. |
 
 ## Workflow
 
@@ -49,11 +49,11 @@ Pipe to `column -t -s $'\t'` for a table, or to a file to diff across runs.
 
 Investigate in this priority order:
 
-| `pedidoCount` | `posStatus` | Meaning | Action |
+| `orderCount` | `posStatus` | Meaning | Action |
 |:--:|:--:|---|---|
-| 2+ | any | **Idempotency regression.** `crear_pedido` derives `pedidoId` from `contactId` + lines and uses a conditional put, so a retry should return `duplicate`, not a second row. Two rows usually means the model changed the lines between calls (e.g. added a pizza after the first save) or omitted `contactId`. | Always investigate. Pull spans and compare the `items` of each call. |
-| 1 | `error:*` / `pending` | Saved, but the store POS did not accept it. | Tail the crear-pedido Lambda log; check the POS secret / base URL. |
-| 0 | - | No pedido. Hang-up, caller declined, the model never called `crear_pedido`, or the call returned `status=error`. | Run `list-tool-calls.py --contact` to tell those apart, then read the transcript. |
+| 2+ | any | **Idempotency regression.** `create_order` derives `orderId` from `contactId` + lines and uses a conditional put, so a retry should return `duplicate`, not a second row. Two rows usually means the model changed the lines between calls (e.g. added a pizza after the first save) or omitted `contactId`. | Always investigate. Pull spans and compare the `items` of each call. |
+| 1 | `error:*` / `pending` | Saved, but the store POS did not accept it. | Tail the create-order Lambda log; check the POS secret / base URL. |
+| 0 | - | No order. Hang-up, caller declined, the model never called `create_order`, or the call returned `status=error`. | Run `list-tool-calls.py --contact` to tell those apart, then read the transcript. |
 | 1 | `ok` / `skipped` | Happy path (`skipped` = no POS configured). | Drill in only if the items or total look wrong. |
 
 ### Step 3. Drill into a single contact
@@ -61,8 +61,8 @@ Investigate in this priority order:
 ```bash
 scripts/pull-session-transcript.sh <contactId>              # what was said
 python scripts/list-tool-calls.py --contact <contactId>     # what the agent did
-aws dynamodb get-item --table-name pizza-voice-pedidos-dev \
-  --key '{"pedidoId":{"S":"<pedidoId>"}}'                   # what was persisted
+aws dynamodb get-item --table-name pizza-voice-orders-dev \
+  --key '{"orderId":{"S":"<orderId>"}}'                   # what was persisted
 ```
 
 ### Step 4. Compare transcript vs persisted order
@@ -73,7 +73,7 @@ aws dynamodb get-item --table-name pizza-voice-pedidos-dev \
 - `total` - computed server-side from menu prices; it must equal the total the
   agent spoke at the recap. A mismatch means the agent did arithmetic from
   memory instead of reading the tool result.
-- `telefono` - E.164 (`+569...`). It comes from the caller ID injected into the
+- `phone` - E.164 (`+569...`). It comes from the caller ID injected into the
   session as `{{$.Custom.customer_phone}}`; the agent should never have asked
   for it unless that value was empty.
 - `contactId` - must equal the Connect contact id; if missing, idempotency is off
@@ -83,7 +83,7 @@ aws dynamodb get-item --table-name pizza-voice-pedidos-dev \
 
 ### Step 5. Report
 
-1. **Bucket counts** for the window (e.g. "18 calls: 12 normal, 3 no-pedido
+1. **Bucket counts** for the window (e.g. "18 calls: 12 normal, 3 no-order
    hang-ups, 2 business errors, 1 POS error, 0 duplicates").
 2. **Specific `contactId`s** for each non-normal bucket.
 3. **One-line "expected vs got" diffs** for each anomaly, sourced from the

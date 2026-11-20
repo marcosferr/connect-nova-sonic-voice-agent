@@ -80,7 +80,7 @@ export class AgentCoreGateway extends Construct {
 
     this.gateway = new agentcore.CfnGateway(this, 'Resource', {
       name,
-      description: "Forno Pizza MCP gateway exposing the 3 Pedidos voice-bot tools",
+      description: "Forno Pizza MCP gateway exposing the 3 pizza-ordering voice-bot tools",
       protocolType: 'MCP',
       authorizerType: 'CUSTOM_JWT',
       authorizerConfiguration: {

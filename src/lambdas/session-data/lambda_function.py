@@ -8,7 +8,7 @@ orchestration prompt, e.g.
     customer_phone = $.CustomerEndpoint.Address   (caller ID from the carrier)
 
 Why: the voice model must never be the source of identity. The caller ID
-comes from the telephone network, so `validar_cliente` is called with a
+comes from the telephone network, so `validate_customer` is called with a
 number the model did not hear, guess or invent.
 
 Fails soft: on any error it returns `status=error` and the flow continues;

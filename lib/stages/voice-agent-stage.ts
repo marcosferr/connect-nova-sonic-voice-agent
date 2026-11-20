@@ -57,10 +57,10 @@ export class VoiceAgentStage extends cdk.Stage {
       posSecretArn: security.posSecretArn,
       jwtSecretArn: security.jwtSecretArn,
       menuTableArn: data.menuTableArn,
-      pedidosTableArn: data.pedidosTableArn,
-      clientesTableArn: data.clientesTableArn,
-      clientesTableIndexArn: data.clientesTableIndexArn,
-      tiendasTableArn: data.tiendasTableArn,
+      ordersTableArn: data.ordersTableArn,
+      customersTableArn: data.customersTableArn,
+      customersTableIndexArn: data.customersTableIndexArn,
+      storesTableArn: data.storesTableArn,
     });
     governance.addStackDependency(security);
     governance.addStackDependency(data);
@@ -68,14 +68,14 @@ export class VoiceAgentStage extends cdk.Stage {
     const compute = new ComputeStack(this, 'ComputeStack', {
       ...stackProps,
       stackName: `${prefix}-compute`,
-      validarClienteRoleArn: governance.validarClienteRoleArn,
-      consultarMenuRoleArn: governance.consultarMenuRoleArn,
-      crearPedidoRoleArn: governance.crearPedidoRoleArn,
+      validateCustomerRoleArn: governance.validateCustomerRoleArn,
+      getMenuRoleArn: governance.getMenuRoleArn,
+      createOrderRoleArn: governance.createOrderRoleArn,
       menuTableName: data.menuTableName,
-      pedidosTableName: data.pedidosTableName,
-      clientesTableName: data.clientesTableName,
-      clientesTableIndexName: data.clientesTableIndexName,
-      tiendasTableName: data.tiendasTableName,
+      ordersTableName: data.ordersTableName,
+      customersTableName: data.customersTableName,
+      customersTableIndexName: data.customersTableIndexName,
+      storesTableName: data.storesTableName,
       posSecretArn: security.posSecretArn,
     });
     compute.addStackDependency(governance);
@@ -89,9 +89,9 @@ export class VoiceAgentStage extends cdk.Stage {
         kmsKeyArn: security.kmsKeyArn,
         lexBotRoleArn: governance.lexBotRoleArn,
         toolLambdas: {
-          validarCliente: compute.validarClienteFunction,
-          consultarMenu: compute.consultarMenuFunction,
-          crearPedido: compute.crearPedidoFunction,
+          validateCustomer: compute.validateCustomerFunction,
+          getMenu: compute.getMenuFunction,
+          createOrder: compute.createOrderFunction,
         },
       });
       conversational.addStackDependency(storage);
@@ -104,9 +104,9 @@ export class VoiceAgentStage extends cdk.Stage {
         ...stackProps,
         stackName: `${prefix}-observability`,
         lambdaFunctionNames: [
-          compute.validarClienteFunctionName,
-          compute.consultarMenuFunctionName,
-          compute.crearPedidoFunctionName,
+          compute.validateCustomerFunctionName,
+          compute.getMenuFunctionName,
+          compute.createOrderFunctionName,
         ],
       });
       observability.addStackDependency(storage);

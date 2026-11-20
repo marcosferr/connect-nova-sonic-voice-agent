@@ -9,8 +9,8 @@ found"). This distinguishes "the model never called the tool" from "the model
 called it but execution failed", which gateway or Lambda logs alone cannot.
 
 It also decodes the business result of the tool when it is JSON, so a
-`crear_pedido` call that ran fine but returned
-`{"status": "error", "code": "PIZZA_FUERA_DE_CATALOGO", ...}` is flagged as a
+`create_order` call that ran fine but returned
+`{"status": "error", "code": "PIZZA_NOT_ON_MENU", ...}` is flagged as a
 business error rather than counted as a success.
 
 Input resolution:
@@ -44,7 +44,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from stack_env import load_env  # noqa: E402
 
-TOOL_SLUGS = ["validar-cliente", "consultar-menu", "crear-pedido"]
+TOOL_SLUGS = ["validate-customer", "get-menu", "create-order"]
 
 
 class Tracer:
@@ -120,7 +120,7 @@ def _toolresult(span):
 
 
 def short_tool(name: str | None) -> str:
-    """`gateway_<id>__crear-pedido___crear_pedido` -> `crear_pedido`."""
+    """`gateway_<id>__create-order___create_order` -> `create_order`."""
     return (name or "?").split("___")[-1]
 
 

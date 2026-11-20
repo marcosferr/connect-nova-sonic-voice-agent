@@ -10,10 +10,10 @@ export interface GovernanceStackProps extends cdk.StackProps {
   posSecretArn: string;
   jwtSecretArn: string;
   menuTableArn: string;
-  pedidosTableArn: string;
-  clientesTableArn: string;
-  clientesTableIndexArn: string;
-  tiendasTableArn: string;
+  ordersTableArn: string;
+  customersTableArn: string;
+  customersTableIndexArn: string;
+  storesTableArn: string;
 }
 
 /**
@@ -23,9 +23,9 @@ export interface GovernanceStackProps extends cdk.StackProps {
  * concrete tool-Lambda ARNs.
  */
 export class GovernanceStack extends cdk.Stack {
-  public readonly validarClienteRoleArn: string;
-  public readonly consultarMenuRoleArn: string;
-  public readonly crearPedidoRoleArn: string;
+  public readonly validateCustomerRoleArn: string;
+  public readonly getMenuRoleArn: string;
+  public readonly createOrderRoleArn: string;
   public readonly lexBotRoleArn: string;
 
   constructor(scope: Construct, id: string, props: GovernanceStackProps) {
@@ -39,13 +39,13 @@ export class GovernanceStack extends cdk.Stack {
       Resource: [props.kmsKeyArn],
     };
 
-    // validarCliente — read/write Clientes (+ caller-ID GSI).
-    this.validarClienteRoleArn = new LambdaRole(this, 'ValidarClienteRole', {
+    // validateCustomer — read/write Customers (+ phone GSI).
+    this.validateCustomerRoleArn = new LambdaRole(this, 'ValidateCustomerRole', {
       ...shared,
-      roleSlug: 'validar-cliente',
+      roleSlug: 'validate-customer',
       statements: [
         {
-          Sid: 'ClientesRW',
+          Sid: 'CustomersRW',
           Effect: 'Allow',
           Action: [
             'dynamodb:GetItem',
@@ -53,16 +53,16 @@ export class GovernanceStack extends cdk.Stack {
             'dynamodb:PutItem',
             'dynamodb:UpdateItem',
           ],
-          Resource: [props.clientesTableArn, props.clientesTableIndexArn],
+          Resource: [props.customersTableArn, props.customersTableIndexArn],
         },
         kmsStatement,
       ],
     }).roleArn;
 
-    // consultarMenu — read-only Menu.
-    this.consultarMenuRoleArn = new LambdaRole(this, 'ConsultarMenuRole', {
+    // getMenu — read-only Menu.
+    this.getMenuRoleArn = new LambdaRole(this, 'GetMenuRole', {
       ...shared,
-      roleSlug: 'consultar-menu',
+      roleSlug: 'get-menu',
       statements: [
         {
           Sid: 'MenuRead',
@@ -74,23 +74,23 @@ export class GovernanceStack extends cdk.Stack {
       ],
     }).roleArn;
 
-    // crearPedido — write Pedidos, read Menu + Tiendas to validate, read POS secret.
-    this.crearPedidoRoleArn = new LambdaRole(this, 'CrearPedidoRole', {
+    // createOrder — write Orders, read Menu + Stores to validate, read POS secret.
+    this.createOrderRoleArn = new LambdaRole(this, 'CreateOrderRole', {
       ...shared,
-      roleSlug: 'crear-pedido',
+      roleSlug: 'create-order',
       statements: [
         {
-          Sid: 'PedidosWrite',
+          Sid: 'OrdersWrite',
           Effect: 'Allow',
           Action: ['dynamodb:PutItem', 'dynamodb:UpdateItem'],
-          Resource: [props.pedidosTableArn],
+          Resource: [props.ordersTableArn],
         },
         {
-          Sid: 'MenuAndTiendasRead',
+          Sid: 'MenuAndStoresRead',
           Effect: 'Allow',
           // Scan: list the valid catalog back to the agent when it asks for an unknown pizza.
           Action: ['dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:Scan'],
-          Resource: [props.menuTableArn, props.tiendasTableArn],
+          Resource: [props.menuTableArn, props.storesTableArn],
         },
         {
           Sid: 'ReadPosSecret',

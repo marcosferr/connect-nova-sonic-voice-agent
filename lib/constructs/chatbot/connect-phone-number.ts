@@ -38,7 +38,7 @@ export class ConnectPhoneNumber extends Construct {
       targetArn: props.targetArn,
       type: props.phoneType,
       countryCode: props.countryCode,
-      description: `${props.projectName} Pedidos inbound DID (${props.envName})`,
+      description: `${props.projectName} orders inbound DID (${props.envName})`,
     });
 
     const phoneNumberId = cdk.Fn.select(1, cdk.Fn.split('/', this.phoneNumber.attrPhoneNumberArn));
