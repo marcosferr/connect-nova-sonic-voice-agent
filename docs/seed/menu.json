@@ -1,0 +1,46 @@
+{
+  "pizza-voice-menu-dev": [
+    { "PutRequest": { "Item": {
+      "pizzaId": { "S": "napolitana" },
+      "nombre":  { "S": "Napolitana" },
+      "descripcion": { "S": "Salsa de tomate, mozzarella, jamón, oreganón y aceitunas." },
+      "precio":  { "N": "8990" },
+      "activa":  { "BOOL": true }
+    } } },
+    { "PutRequest": { "Item": {
+      "pizzaId": { "S": "pepperoni" },
+      "nombre":  { "S": "Pepperoni" },
+      "descripcion": { "S": "Salsa de tomate, mozzarella y doble pepperoni." },
+      "precio":  { "N": "9990" },
+      "activa":  { "BOOL": true }
+    } } },
+    { "PutRequest": { "Item": {
+      "pizzaId": { "S": "muzzarella" },
+      "nombre":  { "S": "Muzzarella" },
+      "descripcion": { "S": "Salsa de tomate y abundante mozzarella." },
+      "precio":  { "N": "7990" },
+      "activa":  { "BOOL": true }
+    } } },
+    { "PutRequest": { "Item": {
+      "pizzaId": { "S": "hawaiana" },
+      "nombre":  { "S": "Hawaiana" },
+      "descripcion": { "S": "Salsa de tomate, mozzarella, jamón y piña." },
+      "precio":  { "N": "9490" },
+      "activa":  { "BOOL": true }
+    } } },
+    { "PutRequest": { "Item": {
+      "pizzaId": { "S": "vegetariana" },
+      "nombre":  { "S": "Vegetariana" },
+      "descripcion": { "S": "Salsa de tomate, mozzarella, champiñón, pimentón, cebolla y aceitunas." },
+      "precio":  { "N": "9490" },
+      "activa":  { "BOOL": true }
+    } } },
+    { "PutRequest": { "Item": {
+      "pizzaId": { "S": "cuatro-quesos" },
+      "nombre":  { "S": "Cuatro Quesos" },
+      "descripcion": { "S": "Mozzarella, gouda, azul y parmesano." },
+      "precio":  { "N": "10990" },
+      "activa":  { "BOOL": true }
+    } } }
+  ]
+}

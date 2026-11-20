@@ -1,0 +1,15 @@
+node_modules/
+cdk.out/
+build/
+*.js
+!jest.config.js
+!tools/webrtc-caller/*.js
+!tools/webrtc-caller/page/entry.js
+!tools/webrtc-caller/page/chime-index-shim.js
+*.d.ts
+.env
+__pycache__/
+*.pyc
+.DS_Store
+tests/calls/runs/
+tools/webrtc-caller/page/bundle.js

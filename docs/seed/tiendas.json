@@ -1,0 +1,22 @@
+{
+  "pizza-voice-tiendas-dev": [
+    { "PutRequest": { "Item": {
+      "tiendaId":  { "S": "providencia" },
+      "nombre":    { "S": "Forno Pizza Providencia" },
+      "direccion": { "S": "Av. Providencia 1234, Providencia" },
+      "comuna":    { "S": "Providencia" },
+      "ciudad":    { "S": "Santiago" },
+      "telefono":  { "S": "+56221234567" },
+      "activa":    { "BOOL": true }
+    } } },
+    { "PutRequest": { "Item": {
+      "tiendaId":  { "S": "las-condes" },
+      "nombre":    { "S": "Forno Pizza Las Condes" },
+      "direccion": { "S": "Av. Apoquindo 4500, Las Condes" },
+      "comuna":    { "S": "Las Condes" },
+      "ciudad":    { "S": "Santiago" },
+      "telefono":  { "S": "+56222345678" },
+      "activa":    { "BOOL": true }
+    } } }
+  ]
+}

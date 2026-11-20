@@ -1,0 +1,28 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  synth-lint-test:
+    runs-on: ubuntu-latest
+    env:
+      ENV_NAME: dev
+      AWS_ACCOUNT_ID: "123456789012"   # synth only — no AWS credentials needed
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: npm ci
+      - run: npm run build
+      - run: npx cdk synth --quiet
+      - run: pip install cfn-lint
+      - run: cfn-lint --regions us-east-1 -- cdk.out/assembly-Dev/*.template.json
+      - run: npm test
+      - name: Tool validation unit tests (offline)
+        run: python -m unittest discover -s tests/unit -v

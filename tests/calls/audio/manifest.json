@@ -1,0 +1,11 @@
+{
+  "_comment": "Caller clips for scripts/call-test.py. Regenerate with: python scripts/synthesize-audio.py --force",
+  "pedido-napolitanas": "Hola, quiero pedir dos pizzas napolitanas y una pepperoni, por favor.",
+  "pizza-barbacoa": "Hola, quiero una pizza barbacoa.",
+  "pizza-hawaiana": "Ah, ya. Entonces una hawaiana, por favor.",
+  "telefono": "<speak>Mi número es <say-as interpret-as=\"telephone\">9 8765 4321</say-as>.</speak>",
+  "nombre": "Me llamo Camila.",
+  "direccion": "Avenida Providencia mil doscientos, departamento cuatro.",
+  "si-correcto": "Sí, está correcto.",
+  "no-eso-es-todo": "No, eso es todo, gracias."
+}

@@ -1,0 +1,31 @@
+{
+  "name": "connect-nova-sonic-voice-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Amazon Connect voice agent (Nova 2 Sonic + Connect AI agents + AgentCore Gateway MCP tools) deployed 100% with AWS CDK L1, with a synthetic WebRTC caller for end-to-end tests.",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "cdk": "cdk",
+    "synth": "cdk synth",
+    "diff": "cdk diff",
+    "deploy": "cdk deploy \"Dev/*\" --require-approval never",
+    "call-test": "python3 scripts/call-test.py"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "22.7.9",
+    "aws-cdk": "2.1149.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.6.3"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "2.277.0",
+    "constructs": "^10.0.0",
+    "dotenv": "^16.5.0"
+  },
+  "license": "MIT-0"
+}
