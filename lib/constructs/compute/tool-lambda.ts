@@ -16,13 +16,15 @@ export interface ToolLambdaProps {
   roleArn: string;
   description: string;
   environment: Record<string, string>;
-  /** Default 512 MB: more CPU shortens the cold-start init; tools run in ms. */
+  /** Default 256 MB. Measured: 512/1024 MB do NOT shorten the cold-start init (~0.4-0.5 s). */
   memorySize?: number;
   /**
    * Cold-start strategy (voice turns are latency-sensitive):
-   * - `none` (default): plain function, ~0.45–0.65 s extra on a cold call.
-   * - `snapstart`: Lambda SnapStart on published versions (Python 3.12+).
-   * - `provisioned`: provisioned concurrency on the `live` alias (no cold start, billed hourly).
+   * - `none` (default): ~0.45–0.65 s extra on a cold call (init + first DynamoDB connection).
+   * - `snapstart`: SnapStart on published versions. Measured restore ≈ 0.46 s for these
+   *   small Python handlers — no real gain; kept for heavier handlers.
+   * - `provisioned`: provisioned concurrency on the `live` alias — the only option that
+   *   removed the cold start in our measurements (billed hourly, ~USD 3/month per Lambda at 1).
    * Callers always invoke the `live` alias (`target`): gateway target,
    * permissions and the contact flow.
    */
@@ -65,7 +67,7 @@ export class ToolLambda extends Construct {
       runtime: lambda.Runtime.PYTHON_3_12,
       architecture: lambda.Architecture.ARM_64,
       handler: 'lambda_function.lambda_handler',
-      memorySize: props.memorySize ?? 512,
+      memorySize: props.memorySize ?? 256,
       ...(warmMode === 'snapstart' ? { snapStart: lambda.SnapStartConf.ON_PUBLISHED_VERSIONS } : {}),
       timeout: props.timeout ?? cdk.Duration.seconds(30),
       role: iam.Role.fromRoleArn(this, 'Role', props.roleArn, { mutable: false }),

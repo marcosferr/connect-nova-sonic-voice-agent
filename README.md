@@ -59,6 +59,21 @@ error the model can act on (`code` + `suggestedAction`):
 
 Offline tests for these guards: `python -m unittest discover -s tests/unit -v`.
 
+## Latency: Lambda cold starts on voice turns
+
+A cold tool Lambda adds silence to the call. Measured on the deployed tools (Python 3.12, us-east-1):
+
+| Config | Cold penalty | Warm |
+|---|---|---|
+| 256 MB (default) | init 0.38–0.50 s + ~0.17 s first DynamoDB call | 10–15 ms |
+| 512 / 1024 MB | init 0.48–0.49 s — **no gain** | 8–9 ms |
+| SnapStart | restore 0.46 s — **no gain** for small handlers | 19 ms |
+| Provisioned concurrency (1) | **none** | 10 ms |
+
+`TOOL_WARM_MODE=provisioned` (plus `TOOL_PROVISIONED_CONCURRENCY`) keeps the three tools and the
+`session-data` Lambda warm through a `live` alias. Every consumer (gateway targets, permissions,
+contact flow) always invokes that alias, so switching modes never changes a cross-stack ARN.
+
 ## Prerequisites
 
 - AWS account, region **us-east-1**, CDK bootstrapped (`npx cdk bootstrap`).
